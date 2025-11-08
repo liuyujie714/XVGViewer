@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <title>Echart</title>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@6.0.0/dist/echarts.js"></script>
+
+    <style>
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            margin-top: 1%;
+            width: 100%;
+        }
+
+        .centered-window {
+            width: 90%; /* 使用百分比 */
+            max-width: 800px; /* 最大宽度 */
+            min-width: 300px; /* 最小宽度 */
+            height: 60vh; /* 使用视口高度百分比 */
+            max-height: 500px; /* 最大高度 */
+            min-height: 300px; /* 最小高度 */
+            background-color: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+
+        /* 小屏幕适配 */
+        @media (max-width: 768px) {
+            .centered-window {
+                width: 95%;
+                height: 50vh;
+                margin-top: 2%;
+            }
+            
+            .container {
+                margin-top: 2%;
+            }
+        }
+
+        /* 超大屏幕适配 */
+        @media (min-width: 1200px) {
+            .centered-window {
+                width: 70%;
+                height: 70vh;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div>
+        <input type="file" id="loadfile" title="读取GROMACS输出的XVG文件" style="margin-left: 1%; margin-top: 1%;" accept=".xvg, .txt" >
+    </div>
+    <div class='container'>
+        <div class="centered-window" id="pic" style="width: 800px;height:600px;"></div>
+    </div>
+    <!--add footer -->
+    <div>
+        <div class="container">
+            <p>XVG可视化工具v1.0 &copy;<a href="https://github.com/liuyujie714">liuyujie714</a>. </p>
+        </div>
+    </div>
+
+    <script>
+        var $ = function (id) {
+            return document.getElementById(id);
+        };
+
+        const initData = () => {
+            return {
+                title: '',
+                xlabel: '',
+                ylabel: '',
+                type: 'xy',
+                subtitle: '',
+                legends: [],
+                data: []
+            };
+        };
+
+        // global data array
+        var g_data = initData();
+
+        $("loadfile").addEventListener("change", function () {
+            let file = this.files[0];
+            let r = new FileReader();
+            r.onload = function () {
+                g_data = initData();
+                r.result.split('\n').forEach(line => {
+                    if (line.startsWith('#')) {
+                        return;
+                    }
+                    // parser title
+                    if (line.startsWith('@')) {
+                        data = line.trim().split(/\s+/);
+                        if (data.length >= 2) {
+                            switch(data[1]) {
+                                case 'title':
+                                    g_data.title = data[2].replace(/\"/g, '').trim();
+                                    break;
+                                case 'xaxis':
+                                    g_data.xlabel = line.split("\"")[1].trim();
+                                    break;
+                                case 'yaxis':
+                                    g_data.ylabel = line.split("\"")[1].trim();
+                                    break;
+                                case 'subtitle':
+                                    g_data.subtitle = line.split("\"")[1].trim();
+                                    break;
+                            }
+
+                            if (data[0]=="@TYPE") {
+                                g_data.type = data[1];
+                            }
+
+                            if (line.match(/@\s*s(\d+)\s+legend\s+"([^"]*)"/)) {
+                                g_data.legends.push(line.split("\"")[1].trim());
+                            }
+                        }
+                    } else {
+                        data = line.trim().split(/\s+/);
+                        if (data.length >= 2) {
+                            g_data.data.push(data.map(x => parseFloat(x)));
+                        }
+                    }
+                });
+                console.log(g_data);
+
+                updateChart();
+            };
+            r.readAsText(file);
+        })
+        
+        function updateChart() {
+            if (g_data.data.length === 0) {
+                alert('没有有效数据');
+                return;
+            }
+            
+            let series = [];
+            let xAxisData = [];
+            
+            // 根据数据类型处理
+            if (g_data.type === 'xy' || !g_data.type) {
+                // XY 数据：假设第一列是 X，其他列是 Y 系列
+                xAxisData = g_data.data.map(item => item[0]);
+                
+                // 从第二列开始创建系列
+                for (let i = 1; i < g_data.data[0].length; i++) {
+                    series.push({
+                        name: g_data.legends.length == g_data.data[0].length-1? g_data.legends[i-1] : `Series ${i}`,
+                        type: 'line',
+                        showSymbol: false, 
+                        data: g_data.data.map(item => item[i])
+                    });
+                }
+            } else if (g_data.type === 'bar') {
+                // 柱状图数据
+                xAxisData = g_data.data.map(item => item[0]);
+                
+                for (let i = 1; i < g_data.data[0].length; i++) {
+                    series.push({
+                        name: g_data.legends.length == g_data.data[0].length-1? g_data.legends[i-1] : `Series ${i}`,
+                        type: 'bar',
+                        data: g_data.data.map(item => item[i])
+                    });
+                }
+            }
+            
+            // 如果没有系列名称，使用默认名称
+            if (series.length === 0 && g_data.data[0].length >= 2) {
+                xAxisData = g_data.data.map(item => item[0]);
+                series.push({
+                    name: 'Data Series',
+                    type: 'line',
+                    showSymbol: false, 
+                    data: g_data.data.map(item => item[1])
+                });
+            }
+            
+            // 获取图例数据
+            let legendData = series.map(s => s.name);
+            
+            // 更新图表选项
+            let options = {
+                title: {
+                    text: g_data.title || 'No Title',
+                    subtext: g_data.subtitle || ''
+                },
+                tooltip: {
+                    trigger: 'axis'
+                },
+                toolbox: {
+                    show: true,
+                    feature: {
+                        dataZoom: {
+                            yAxisIndex: 'none'
+                        },
+                        dataView: { readOnly: false },
+                        magicType: { type: ['line', 'bar'] },
+                        restore: {},
+                        saveAsImage: {}
+                    }
+                },
+                legend: {
+                    data: legendData,
+                    right: 10,
+                    top: 'center',
+                    orient: 'vertical',
+                },
+                xAxis: {
+                    type: 'category',
+                    data: xAxisData,
+                    name: g_data.xlabel || 'X-axis',
+                    nameLocation: 'middle',
+                    axisLine: {
+                        show: true,
+                    },
+                    axisTick: {
+                        show: true,
+                    },
+                    nameGap: 30
+                },
+                yAxis: {
+                    type: 'value',
+                    name: g_data.ylabel || 'Y-axis',
+                    nameLocation: 'center',
+                    axisLine: {
+                        show: true,
+                    },
+                    axisTick: {
+                        show: true,
+                    },
+                    nameGap: 40
+                },
+                series: series
+            };
+            
+            // 设置全局字体并初始化
+            echarts.registerTheme('globalFontTheme', {
+                textStyle: {
+                    fontFamily: '"Times New Roman", Arial, "Microsoft YaHei", sans-serif',
+                    fontSize: 14,
+                    color: '#000'  // black
+                }
+            });
+            var g_mychart = echarts.init($('pic'), 'globalFontTheme');
+
+            g_mychart.setOption(options, true);
+        }
+    </script>
+</body>
+
+</html>
