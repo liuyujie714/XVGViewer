@@ -1,261 +1,357 @@
 <!DOCTYPE html>
 <html>
-
 <head>
     <meta charset="utf-8">
     <title>XVGViewer</title>
     <script src="https://cdn.jsdelivr.net/npm/echarts@6.0.0/dist/echarts.js"></script>
-
     <style>
-        .container {
+        * { box-sizing: border-box; }
+        body {
+            font-family: "Times New Roman", Arial, "Microsoft YaHei", sans-serif;
+            margin: 0; padding: 0;
+            background: #f0f2f5;
+        }
+
+        .top-bar {
             display: flex;
-            flex-direction: column;
             align-items: center;
-            justify-content: center;
-            margin-top: 1%;
-            width: 100%;
+            gap: 12px;
+            padding: 9px 20px;
+            background: #fff;
+            border-bottom: 1px solid #dde1e7;
+            font-size: 14px;
+            color: #555;
         }
 
-        .centered-window {
-            width: 90%; /* 使用百分比 */
-            max-width: 800px; /* 最大宽度 */
-            min-width: 300px; /* 最小宽度 */
-            height: 60vh; /* 使用视口高度百分比 */
-            max-height: 500px; /* 最大高度 */
-            min-height: 300px; /* 最小高度 */
-            background-color: white;
-            border-radius: 12px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        .main {
+            display: flex;
+            gap: 14px;
+            padding: 14px 16px 0;
+            height: calc(100vh - 80px);
+        }
+
+        .chart-wrap {
+            flex: 1 1 0;
+            min-width: 0;
+            background: #fff;
+            border-radius: 10px;
+            box-shadow: 0 4px 18px rgba(0,0,0,0.11);
+            overflow: hidden;
+        }
+
+        #pic {
+            width: 100%;
+            height: 100%;
+        }
+
+        .side-panel {
+            flex: 0 0 200px;
+            width: 200px;
+            background: #fff;
+            border-radius: 10px;
+            box-shadow: 0 4px 18px rgba(0,0,0,0.11);
+            padding: 14px 13px 16px;
             display: flex;
             flex-direction: column;
-            overflow: hidden;
-            margin-bottom: 20px;
+            overflow-y: auto;
         }
 
-        /* 小屏幕适配 */
-        @media (max-width: 768px) {
-            .centered-window {
-                width: 95%;
-                height: 50vh;
-                margin-top: 2%;
-            }
-            
-            .container {
-                margin-top: 2%;
-            }
+        .panel-heading {
+            font-size: 12px;
+            font-weight: bold;
+            color: #1a6fa8;
+            border-bottom: 1.5px solid #cde4f7;
+            padding-bottom: 3px;
+            margin-bottom: 8px;
+            margin-top: 12px;
+        }
+        .panel-heading:first-child { margin-top: 0; }
+
+        .ctrl-group {
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+            margin-bottom: 7px;
+        }
+        .ctrl-group label {
+            font-size: 11px;
+            color: #777;
+        }
+        .ctrl-group input {
+            padding: 4px 6px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 12px;
+            width: 100%;
+            background: #fafafa;
+            font-family: inherit;
+            transition: border-color 0.15s;
+        }
+        .ctrl-group input:focus {
+            outline: none;
+            border-color: #1a6fa8;
+            background: #fff;
         }
 
-        /* 超大屏幕适配 */
-        @media (min-width: 1200px) {
-            .centered-window {
-                width: 70%;
-                height: 70vh;
-            }
+        .two-col {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px;
+            margin-bottom: 7px;
+        }
+        .two-col .ctrl-group { margin-bottom: 0; }
+
+        .spacer { flex: 1; }
+
+        .btn-group {
+            display: flex;
+            flex-direction: column;
+            gap: 7px;
+            padding-top: 12px;
+            border-top: 1px solid #eee;
+            margin-top: 4px;
+        }
+        .apply-btn, .reset-btn {
+            width: 100%;
+            padding: 7px 0;
+            border-radius: 6px;
+            font-size: 13px;
+            cursor: pointer;
+            border: none;
+            font-family: inherit;
+            transition: background 0.15s;
+        }
+        .apply-btn { background: #1a6fa8; color: #fff; }
+        .apply-btn:hover { background: #135580; }
+        .reset-btn { background: #f0f0f0; color: #555; border: 1px solid #ccc; }
+        .reset-btn:hover { background: #e2e2e2; }
+
+        footer {
+            text-align: center;
+            font-size: 12px;
+            color: #aaa;
+            padding: 8px 0 12px;
+        }
+
+        @media (max-width: 680px) {
+            .main { flex-direction: column; height: auto; }
+            .chart-wrap { min-height: 300px; }
+            .side-panel { flex: none; width: 100%; }
         }
     </style>
 </head>
-
 <body>
-    <div>
-        <input type="file" id="loadfile" title="读取GROMACS输出的XVG文件" style="margin-left: 1%; margin-top: 1%;" accept=".xvg, .txt" >
-    </div>
-    <div class='container'>
-        <div class="centered-window" id="pic" style="width: 800px;height:600px;"></div>
-    </div>
-    <!--add footer -->
-    <div>
-        <div class="container">
-            <p>XVG可视化工具v1.0 &copy;<a href="https://github.com/liuyujie714">liuyujie714</a>. </p>
+
+<div class="top-bar">
+    <input type="file" id="loadfile" accept=".xvg,.txt">
+</div>
+
+<div class="main">
+    <div class="chart-wrap"><div id="pic"></div></div>
+
+    <div class="side-panel">
+        <div class="panel-heading">图表标题</div>
+        <div class="ctrl-group">
+            <label>主标题</label>
+            <input type="text" id="titleInput" placeholder="（自动读取）">
+        </div>
+        <div class="ctrl-group">
+            <label>副标题</label>
+            <input type="text" id="subtitleInput" placeholder="（自动读取）">
+        </div>
+
+        <div class="panel-heading">X 轴</div>
+        <div class="ctrl-group">
+            <label>标签名称</label>
+            <input type="text" id="xlabelInput" placeholder="（自动读取）">
+        </div>
+        <div class="two-col">
+            <div class="ctrl-group">
+                <label>最小值</label>
+                <input type="number" id="xminInput" placeholder="自动" step="any">
+            </div>
+            <div class="ctrl-group">
+                <label>最大值</label>
+                <input type="number" id="xmaxInput" placeholder="自动" step="any">
+            </div>
+        </div>
+        <div class="ctrl-group">
+            <label>刻度间隔</label>
+            <input type="number" id="xintervalInput" placeholder="自动" min="0" step="any">
+        </div>
+
+        <div class="panel-heading">Y 轴</div>
+        <div class="ctrl-group">
+            <label>标签名称</label>
+            <input type="text" id="ylabelInput" placeholder="（自动读取）">
+        </div>
+        <div class="two-col">
+            <div class="ctrl-group">
+                <label>最小值</label>
+                <input type="number" id="yminInput" placeholder="自动" step="any">
+            </div>
+            <div class="ctrl-group">
+                <label>最大值</label>
+                <input type="number" id="ymaxInput" placeholder="自动" step="any">
+            </div>
+        </div>
+        <div class="ctrl-group">
+            <label>刻度间隔</label>
+            <input type="number" id="yintervalInput" placeholder="自动" min="0" step="any">
+        </div>
+
+        <div class="spacer"></div>
+        <div class="btn-group">
+            <button class="apply-btn" id="applyBtn">应用设置</button>
+            <button class="reset-btn" id="resetBtn">重置为默认</button>
         </div>
     </div>
+</div>
 
-    <script>
-        var $ = function (id) {
-            return document.getElementById(id);
-        };
+<footer>
+    XVG可视化工具 v1.1 &copy; <a href="https://github.com/liuyujie714">liuyujie714</a>
+</footer>
 
-        const initData = () => {
-            return {
-                title: '',
-                xlabel: '',
-                ylabel: '',
-                type: 'xy',
-                subtitle: '',
-                legends: [],
-                data: []
-            };
-        };
+<script>
+    var $ = id => document.getElementById(id);
 
-        // global data array
-        var g_data = initData();
+    const initData = () => ({
+        title:'', xlabel:'', ylabel:'', type:'xy', subtitle:'', legends:[], data:[]
+    });
 
-        $("loadfile").addEventListener("change", function () {
-            let file = this.files[0];
-            let r = new FileReader();
-            r.onload = function () {
-                g_data = initData();
-                r.result.split('\n').forEach(line => {
-                    if (line.startsWith('#')) {
-                        return;
-                    }
-                    // parser title
-                    if (line.startsWith('@')) {
-                        data = line.trim().split(/\s+/);
-                        if (data.length >= 2) {
-                            switch(data[1]) {
-                                case 'title':
-                                    g_data.title = line.split("\"")[1].trim();
-                                    break;
-                                case 'xaxis':
-                                    g_data.xlabel = line.split("\"")[1].trim();
-                                    break;
-                                case 'yaxis':
-                                    g_data.ylabel = line.split("\"")[1].trim();
-                                    break;
-                                case 'subtitle':
-                                    g_data.subtitle = line.split("\"")[1].trim();
-                                    break;
-                            }
+    var g_data = initData();
+    var g_mychart = null;
 
-                            if (data[0]=="@TYPE") {
-                                g_data.type = data[1];
-                            }
-
-                            if (line.match(/@\s*s(\d+)\s+legend\s+"([^"]*)"/)) {
-                                g_data.legends.push(line.split("\"")[1].trim());
-                            }
+    $("loadfile").addEventListener("change", function () {
+        let r = new FileReader();
+        r.onload = function () {
+            g_data = initData();
+            r.result.split('\n').forEach(line => {
+                if (line.startsWith('#')) return;
+                if (line.startsWith('@')) {
+                    let d = line.trim().split(/\s+/);
+                    if (d.length >= 2) {
+                        switch (d[1]) {
+                            case 'title':    g_data.title    = line.split('"')[1].trim(); break;
+                            case 'xaxis':    g_data.xlabel   = line.split('"')[1].trim(); break;
+                            case 'yaxis':    g_data.ylabel   = line.split('"')[1].trim(); break;
+                            case 'subtitle': g_data.subtitle = line.split('"')[1].trim(); break;
                         }
-                    } else {
-                        data = line.trim().split(/\s+/);
-                        if (data.length >= 2) {
-                            g_data.data.push(data.map(x => parseFloat(x)));
-                        }
+                        if (d[0] === "@TYPE") g_data.type = d[1];
+                        if (line.match(/@\s*s(\d+)\s+legend\s+"([^"]*)"/))
+                            g_data.legends.push(line.split('"')[1].trim());
                     }
-                });
-
-                updateChart();
-            };
-            r.readAsText(file);
-        })
-        
-        function updateChart() {
-            if (g_data.data.length === 0) {
-                alert('没有有效数据');
-                return;
-            }
-            
-            let series = [];
-            let xAxisData = [];
-            
-            // 根据数据类型处理
-            if (g_data.type === 'xy' || !g_data.type) {
-                // XY 数据：假设第一列是 X，其他列是 Y 系列
-                xAxisData = g_data.data.map(item => item[0]);
-                
-                // 从第二列开始创建系列
-                for (let i = 1; i < g_data.data[0].length; i++) {
-                    series.push({
-                        name: g_data.legends.length == g_data.data[0].length-1? g_data.legends[i-1] : `Series ${i}`,
-                        type: 'line',
-                        showSymbol: false, 
-                        data: g_data.data.map(item => item[i])
-                    });
-                }
-            } else if (g_data.type === 'bar') {
-                // 柱状图数据
-                xAxisData = g_data.data.map(item => item[0]);
-                
-                for (let i = 1; i < g_data.data[0].length; i++) {
-                    series.push({
-                        name: g_data.legends.length == g_data.data[0].length-1? g_data.legends[i-1] : `Series ${i}`,
-                        type: 'bar',
-                        data: g_data.data.map(item => item[i])
-                    });
-                }
-            }
-            
-            // 如果没有系列名称，使用默认名称
-            if (series.length === 0 && g_data.data[0].length >= 2) {
-                xAxisData = g_data.data.map(item => item[0]);
-                series.push({
-                    name: 'Data Series',
-                    type: 'line',
-                    showSymbol: false, 
-                    data: g_data.data.map(item => item[1])
-                });
-            }
-            
-            // 获取图例数据
-            let legendData = series.map(s => s.name);
-            
-            // 更新图表选项
-            let options = {
-                title: {
-                    text: g_data.title || 'No Title',
-                    subtext: g_data.subtitle || ''
-                },
-                tooltip: {
-                    trigger: 'axis'
-                },
-                toolbox: {
-                    show: true,
-                    feature: {
-                        dataZoom: {
-                            yAxisIndex: 'none'
-                        },
-                        dataView: { readOnly: false },
-                        magicType: { type: ['line', 'bar'] },
-                        restore: {},
-                        saveAsImage: {}
-                    }
-                },
-                legend: {
-                    data: legendData,
-                    right: 10,
-                    top: 'center',
-                    orient: 'vertical',
-                },
-                xAxis: {
-                    type: 'category',
-                    data: xAxisData,
-                    name: g_data.xlabel || 'X-axis',
-                    nameLocation: 'middle',
-                    axisLine: {
-                        show: true,
-                    },
-                    axisTick: {
-                        show: true,
-                    },
-                    nameGap: 30
-                },
-                yAxis: {
-                    type: 'value',
-                    name: g_data.ylabel || 'Y-axis',
-                    nameLocation: 'center',
-                    axisLine: {
-                        show: true,
-                    },
-                    axisTick: {
-                        show: true,
-                    },
-                    nameGap: 40
-                },
-                series: series
-            };
-            
-            // 设置全局字体并初始化
-            echarts.registerTheme('globalFontTheme', {
-                textStyle: {
-                    fontFamily: '"Times New Roman", Arial, "Microsoft YaHei", sans-serif',
-                    fontSize: 14,
-                    color: '#000'  // black
+                } else {
+                    let d = line.trim().split(/\s+/);
+                    if (d.length >= 2) g_data.data.push(d.map(x => parseFloat(x)));
                 }
             });
-            var g_mychart = echarts.init($('pic'), 'globalFontTheme');
+            syncInputsFromData();
+            updateChart();
+        };
+        r.readAsText(this.files[0]);
+    });
 
-            g_mychart.setOption(options, true);
+    function syncInputsFromData() {
+        $("xlabelInput").value   = g_data.xlabel   || '';
+        $("ylabelInput").value   = g_data.ylabel   || '';
+        $("titleInput").value    = g_data.title    || '';
+        $("subtitleInput").value = g_data.subtitle || '';
+        ['xmin','xmax','xinterval','ymin','ymax','yinterval']
+            .forEach(id => $(id+'Input').value = '');
+    }
+
+    function getAx() {
+        return ['title','subtitle','xlabel','ylabel','xmin','xmax','xinterval','ymin','ymax','yinterval']
+            .reduce((o,k) => { o[k] = $(k+'Input').value.trim(); return o; }, {});
+    }
+
+    function updateChart() {
+        if (!g_data.data.length) { alert('没有有效数据'); return; }
+        var ax = getAx();
+        let series = [], isCategory = g_data.type === 'bar';
+
+        if (isCategory) {
+            for (let i = 1; i < g_data.data[0].length; i++)
+                series.push({
+                    name: g_data.legends[i-1] || `Series ${i}`,
+                    type: 'bar',
+                    data: g_data.data.map(r => r[i])
+                });
+        } else {
+            for (let i = 1; i < g_data.data[0].length; i++)
+                series.push({
+                    name: g_data.legends[i-1] || `Series ${i}`,
+                    type: 'line', showSymbol: false,
+                    data: g_data.data.map(r => [r[0], r[i]])
+                });
+            if (!series.length)
+                series.push({ name:'Data Series', type:'line', showSymbol:false,
+                    data: g_data.data.map(r => [r[0], r[1]]) });
         }
-    </script>
-</body>
 
+        let xCfg = {
+            name: ax.xlabel || g_data.xlabel || 'X-axis',
+            nameLocation:'middle', nameGap:30,
+            axisLine:{show:true}, axisTick:{show:true}
+        };
+        if (isCategory) {
+            xCfg.type = 'category';
+            xCfg.data = g_data.data.map(r => r[0]);
+        } else {
+            xCfg.type = 'value';
+            if (ax.xmin)      xCfg.min      = +ax.xmin;
+            if (ax.xmax)      xCfg.max      = +ax.xmax;
+            if (ax.xinterval) xCfg.interval = +ax.xinterval;
+        }
+
+        let yCfg = {
+            type:'value',
+            name: ax.ylabel || g_data.ylabel || 'Y-axis',
+            nameLocation:'center', nameGap:40,
+            axisLine:{show:true}, axisTick:{show:true}
+        };
+        if (ax.ymin)      yCfg.min      = +ax.ymin;
+        if (ax.ymax)      yCfg.max      = +ax.ymax;
+        if (ax.yinterval) yCfg.interval = +ax.yinterval;
+
+        echarts.registerTheme('gft', {
+            textStyle: { fontFamily:'"Times New Roman",Arial,"Microsoft YaHei",sans-serif', fontSize:14, color:'#000' }
+        });
+
+        if (!g_mychart) g_mychart = echarts.init($('pic'), 'gft');
+
+        g_mychart.setOption({
+            title: { text: ax.title||g_data.title||'', subtext: ax.subtitle||g_data.subtitle||'' },
+            tooltip: { trigger:'axis' },
+            toolbox: { show:true, feature:{
+                dataZoom:{yAxisIndex:'none'}, dataView:{readOnly:false},
+                magicType:{type:['line','bar']}, restore:{}, saveAsImage:{pixelRatio:5}
+            }},
+            legend: { data:series.map(s=>s.name), right:10, top:'center', orient:'vertical' },
+            xAxis: xCfg,
+            yAxis: yCfg,
+            series: series
+        }, true);
+
+        g_mychart.resize();
+    }
+
+    $("applyBtn").addEventListener("click", () => { if (g_data.data.length) updateChart(); });
+    $("resetBtn").addEventListener("click", () => { syncInputsFromData(); if (g_data.data.length) updateChart(); });
+
+    function resizeChart() {
+        var wrap = document.querySelector('.chart-wrap');
+        var pic = $('pic');
+        if (wrap && pic) {
+            pic.style.height = wrap.clientHeight + 'px';
+            if (g_mychart) g_mychart.resize();
+        }
+    }
+    window.addEventListener('resize', resizeChart);
+    window.addEventListener('load', resizeChart);
+    setTimeout(resizeChart, 50);
+</script>
+</body>
 </html>
+
