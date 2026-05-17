@@ -293,7 +293,18 @@
         let xCfg = {
             name: ax.xlabel || g_data.xlabel || 'X-axis',
             nameLocation:'middle', nameGap:30,
-            axisLine:{show:true}, axisTick:{show:true}
+            axisLine:{
+                show:true,
+                lineStyle:{
+                    color: '#cccccc', 
+                }
+            }, 
+            axisTick:{show:true},
+            axisLabel: {
+                formatter: function(value) {
+                    return value;  // 直接返回原数字，不加逗号
+                }
+            }
         };
         if (isCategory) {
             xCfg.type = 'category';
@@ -309,7 +320,18 @@
             type:'value',
             name: ax.ylabel || g_data.ylabel || 'Y-axis',
             nameLocation:'center', nameGap:40,
-            axisLine:{show:true}, axisTick:{show:true}
+            axisLine:{
+                show:true,
+                lineStyle:{
+                    color: '#cccccc', 
+                }
+            }, 
+            axisTick:{show:true},
+            axisLabel: {
+                formatter: function(value) {
+                    return value;  // 直接返回原数字，不加逗号
+                }
+            }
         };
         if (ax.ymin)      yCfg.min      = +ax.ymin;
         if (ax.ymax)      yCfg.max      = +ax.ymax;
