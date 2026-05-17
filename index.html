@@ -143,7 +143,7 @@
 <body>
 
 <div class="top-bar">
-    <input type="file" id="loadfile" accept=".xvg,.txt">
+    <input type="file" id="loadfile" accept=".xvg, .txt">
 </div>
 
 <div class="main">
@@ -198,6 +198,12 @@
         <div class="ctrl-group">
             <label>刻度间隔</label>
             <input type="number" id="yintervalInput" placeholder="自动" min="0" step="any">
+        </div>
+
+        <div class="panel-heading">显示选项</div>
+        <div class="ctrl-group" style="flex-direction:row; align-items:center; gap:8px;">
+            <input type="checkbox" id="gridToggle" style="width:auto; margin:0;" checked>
+            <label for="gridToggle" style="font-size:12px; color:#444; cursor:pointer;">显示网格线</label>
         </div>
 
         <div class="spacer"></div>
@@ -263,7 +269,11 @@
 
     function getAx() {
         return ['title','subtitle','xlabel','ylabel','xmin','xmax','xinterval','ymin','ymax','yinterval']
-            .reduce((o,k) => { o[k] = $(k+'Input').value.trim(); return o; }, {});
+            .reduce((o,k) => { o[k] = $(k+'Input').value; return o; }, {});
+    }
+
+    function getGridShow() {
+        return $('gridToggle').checked;
     }
 
     function updateChart() {
@@ -290,19 +300,21 @@
                     data: g_data.data.map(r => [r[0], r[1]]) });
         }
 
+
         let xCfg = {
-            name: ax.xlabel || g_data.xlabel || 'X-axis',
+            name: ax.xlabel,
             nameLocation:'middle', nameGap:30,
             axisLine:{
                 show:true,
                 lineStyle:{
-                    color: '#cccccc', 
+                    color: '#cccccc',
                 }
-            }, 
+            },
             axisTick:{show:true},
+            splitLine:{ show: getGridShow() },
             axisLabel: {
                 formatter: function(value) {
-                    return value;  // 直接返回原数字，不加逗号
+                    return value;
                 }
             }
         };
@@ -311,31 +323,32 @@
             xCfg.data = g_data.data.map(r => r[0]);
         } else {
             xCfg.type = 'value';
-            if (ax.xmin)      xCfg.min      = +ax.xmin;
-            if (ax.xmax)      xCfg.max      = +ax.xmax;
-            if (ax.xinterval) xCfg.interval = +ax.xinterval;
+            if (ax.xmin !== '')      xCfg.min      = +ax.xmin;
+            if (ax.xmax !== '')      xCfg.max      = +ax.xmax;
+            if (ax.xinterval !== '') xCfg.interval = +ax.xinterval;
         }
 
         let yCfg = {
             type:'value',
-            name: ax.ylabel || g_data.ylabel || 'Y-axis',
+            name: ax.ylabel,
             nameLocation:'center', nameGap:40,
             axisLine:{
                 show:true,
                 lineStyle:{
-                    color: '#cccccc', 
+                    color: '#cccccc',
                 }
-            }, 
+            },
             axisTick:{show:true},
+            splitLine:{ show: getGridShow() },
             axisLabel: {
                 formatter: function(value) {
-                    return value;  // 直接返回原数字，不加逗号
+                    return value;
                 }
             }
         };
-        if (ax.ymin)      yCfg.min      = +ax.ymin;
-        if (ax.ymax)      yCfg.max      = +ax.ymax;
-        if (ax.yinterval) yCfg.interval = +ax.yinterval;
+        if (ax.ymin !== '')      yCfg.min      = +ax.ymin;
+        if (ax.ymax !== '')      yCfg.max      = +ax.ymax;
+        if (ax.yinterval !== '') yCfg.interval = +ax.yinterval;
 
         echarts.registerTheme('gft', {
             textStyle: { fontFamily:'"Times New Roman",Arial,"Microsoft YaHei",sans-serif', fontSize:14, color:'#000' }
@@ -344,7 +357,7 @@
         if (!g_mychart) g_mychart = echarts.init($('pic'), 'gft');
 
         g_mychart.setOption({
-            title: { text: ax.title||g_data.title||'', subtext: ax.subtitle||g_data.subtitle||'' },
+            title: { text: ax.title, subtext: ax.subtitle },
             tooltip: { trigger:'axis' },
             toolbox: { show:true, feature:{
                 dataZoom:{yAxisIndex:'none'}, dataView:{readOnly:false},
@@ -361,6 +374,7 @@
 
     $("applyBtn").addEventListener("click", () => { if (g_data.data.length) updateChart(); });
     $("resetBtn").addEventListener("click", () => { syncInputsFromData(); if (g_data.data.length) updateChart(); });
+    $("gridToggle").addEventListener("change", () => { if (g_data.data.length) updateChart(); });
 
     function resizeChart() {
         var wrap = document.querySelector('.chart-wrap');
@@ -376,4 +390,3 @@
 </script>
 </body>
 </html>
-
