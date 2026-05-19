@@ -1,392 +1,1357 @@
 <!DOCTYPE html>
-<html>
+<html lang="zh-CN">
 <head>
-    <meta charset="utf-8">
-    <title>XVGViewer</title>
-    <script src="https://cdn.jsdelivr.net/npm/echarts@6.0.0/dist/echarts.js"></script>
-    <style>
-        * { box-sizing: border-box; }
-        body {
-            font-family: "Times New Roman", Arial, "Microsoft YaHei", sans-serif;
-            margin: 0; padding: 0;
-            background: #f0f2f5;
-        }
+<meta charset="utf-8">
+<title>XVG / XPM 可视化工具 v4.0</title>
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Sora:wght@300;400;600;700&display=swap');
 
-        .top-bar {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 9px 20px;
-            background: #fff;
-            border-bottom: 1px solid #dde1e7;
-            font-size: 14px;
-            color: #555;
-        }
+  :root {
+    --bg: #f0f2f5;
+    --surface: #ffffff;
+    --surface2: #f5f7fa;
+    --border: #dde1e7;
+    --accent: #2c7cb0;
+    --accent2: #18a087;
+    --accent3: #e07b39;
+    --text: #1a202c;
+    --text-dim: #4a5568;
+    --text-muted: #a0aec0;
+    --red: #e53e3e;
+    --panel-w: 230px;
+    --radius: 8px;
+    --tab-h: 42px;
+  }
 
-        .main {
-            display: flex;
-            gap: 14px;
-            padding: 14px 16px 0;
-            height: calc(100vh - 80px);
-        }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-        .chart-wrap {
-            flex: 1 1 0;
-            min-width: 0;
-            background: #fff;
-            border-radius: 10px;
-            box-shadow: 0 4px 18px rgba(0,0,0,0.11);
-            overflow: hidden;
-        }
+  body {
+    font-family: 'Sora', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    height: 100vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
 
-        #pic {
-            width: 100%;
-            height: 100%;
-        }
+  /* ── Top bar ── */
+  .topbar {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 0 20px;
+    height: 52px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+    z-index: 10;
+  }
 
-        .side-panel {
-            flex: 0 0 200px;
-            width: 200px;
-            background: #fff;
-            border-radius: 10px;
-            box-shadow: 0 4px 18px rgba(0,0,0,0.11);
-            padding: 14px 13px 16px;
-            display: flex;
-            flex-direction: column;
-            overflow-y: auto;
-        }
+  .app-title {
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: .08em;
+    color: var(--accent);
+    font-family: 'JetBrains Mono', monospace;
+    white-space: nowrap;
+  }
+  .app-title span { color: var(--accent2); }
 
-        .panel-heading {
-            font-size: 12px;
-            font-weight: bold;
-            color: #1a6fa8;
-            border-bottom: 1.5px solid #cde4f7;
-            padding-bottom: 3px;
-            margin-bottom: 8px;
-            margin-top: 12px;
-        }
-        .panel-heading:first-child { margin-top: 0; }
+  .open-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0 14px;
+    height: 32px;
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: var(--radius);
+    font-size: 12px;
+    font-weight: 600;
+    font-family: 'Sora', sans-serif;
+    cursor: pointer;
+    transition: background .15s, transform .1s;
+    white-space: nowrap;
+  }
+  .open-btn:hover { background: #3a7be0; transform: translateY(-1px); }
+  .open-btn:active { transform: translateY(0); }
 
-        .ctrl-group {
-            display: flex;
-            flex-direction: column;
-            gap: 3px;
-            margin-bottom: 7px;
-        }
-        .ctrl-group label {
-            font-size: 11px;
-            color: #777;
-        }
-        .ctrl-group input {
-            padding: 4px 6px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            font-size: 12px;
-            width: 100%;
-            background: #fafafa;
-            font-family: inherit;
-            transition: border-color 0.15s;
-        }
-        .ctrl-group input:focus {
-            outline: none;
-            border-color: #1a6fa8;
-            background: #fff;
-        }
+  #fileInput { display: none; }
 
-        .two-col {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 6px;
-            margin-bottom: 7px;
-        }
-        .two-col .ctrl-group { margin-bottom: 0; }
+  .file-label {
+    font-size: 12px;
+    color: var(--text-dim);
+    font-family: 'JetBrains Mono', monospace;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex: 1;
+  }
 
-        .spacer { flex: 1; }
+  .statusbar-msg {
+    font-size: 11px;
+    color: var(--text-muted);
+    font-family: 'JetBrains Mono', monospace;
+    white-space: nowrap;
+  }
 
-        .btn-group {
-            display: flex;
-            flex-direction: column;
-            gap: 7px;
-            padding-top: 12px;
-            border-top: 1px solid #eee;
-            margin-top: 4px;
-        }
-        .apply-btn, .reset-btn {
-            width: 100%;
-            padding: 7px 0;
-            border-radius: 6px;
-            font-size: 13px;
-            cursor: pointer;
-            border: none;
-            font-family: inherit;
-            transition: background 0.15s;
-        }
-        .apply-btn { background: #1a6fa8; color: #fff; }
-        .apply-btn:hover { background: #135580; }
-        .reset-btn { background: #f0f0f0; color: #555; border: 1px solid #ccc; }
-        .reset-btn:hover { background: #e2e2e2; }
+  /* ── Tabs ── */
+  .tabs-row {
+    display: flex;
+    gap: 0;
+    padding: 0 20px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .tab-btn {
+    padding: 0 18px;
+    height: var(--tab-h);
+    background: none;
+    border: none;
+    color: var(--text-dim);
+    font-size: 12px;
+    font-family: 'Sora', sans-serif;
+    font-weight: 600;
+    cursor: pointer;
+    position: relative;
+    transition: color .15s;
+    letter-spacing: .03em;
+  }
+  .tab-btn::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 2px;
+    background: var(--accent);
+    transform: scaleX(0);
+    transition: transform .15s;
+  }
+  .tab-btn.active { color: var(--accent); }
+  .tab-btn.active::after { transform: scaleX(1); }
 
-        footer {
-            text-align: center;
-            font-size: 12px;
-            color: #aaa;
-            padding: 8px 0 12px;
-        }
+  /* ── Main layout ── */
+  .content {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+  }
 
-        @media (max-width: 680px) {
-            .main { flex-direction: column; height: auto; }
-            .chart-wrap { min-height: 300px; }
-            .side-panel { flex: none; width: 100%; }
-        }
-    </style>
+  .tab-panel { display: none; flex: 1; overflow: hidden; }
+  .tab-panel.active { display: flex; }
+
+  /* chart area */
+  .chart-area {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    padding: 12px 0 12px 14px;
+    gap: 0;
+  }
+
+  .chart-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 4px 8px;
+  }
+  .tb-btn {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    color: var(--text-dim);
+    font-size: 11px;
+    font-family: 'Sora', sans-serif;
+    cursor: pointer;
+    transition: all .15s;
+  }
+  .tb-btn:hover { background: var(--border); color: var(--text); }
+
+  .chart-box {
+    flex: 1;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+
+  /* ── Side panel ── */
+  .side-panel {
+    width: var(--panel-w);
+    flex-shrink: 0;
+    background: var(--surface);
+    border-left: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .panel-scroll {
+    flex: 1;
+    overflow-y: auto;
+    padding: 10px 12px 8px;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+  }
+  .panel-scroll::-webkit-scrollbar { width: 4px; }
+  .panel-scroll::-webkit-scrollbar-track { background: transparent; }
+  .panel-scroll::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+  .panel-footer {
+    padding: 10px 12px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+  }
+
+  /* group boxes */
+  .grp {
+    margin-bottom: 10px;
+  }
+  .grp-title {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--accent);
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 4px;
+    margin-bottom: 7px;
+  }
+
+  /* inputs */
+  .ctrl { display: flex; flex-direction: column; gap: 2px; margin-bottom: 5px; }
+  .ctrl label { font-size: 10px; color: var(--text-muted); letter-spacing: .03em; }
+  .ctrl input[type=text],
+  .ctrl input[type=number],
+  .ctrl select {
+    width: 100%;
+    padding: 4px 7px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    color: var(--text);
+    font-size: 11px;
+    font-family: 'JetBrains Mono', monospace;
+    transition: border-color .15s;
+    appearance: none;
+  }
+  .ctrl input:focus, .ctrl select:focus {
+    outline: none;
+    border-color: var(--accent);
+  }
+  .ctrl input::placeholder { color: var(--text-muted); }
+
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+
+  .ctrl-row { display: flex; align-items: center; gap: 7px; margin-bottom: 5px; }
+  .ctrl-row label { font-size: 11px; color: var(--text-dim); cursor: pointer; user-select: none; }
+  .ctrl-row input[type=checkbox] { accent-color: var(--accent); cursor: pointer; }
+
+  /* buttons */
+  .apply-btn {
+    width: 100%;
+    padding: 7px 0;
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: var(--radius);
+    font-size: 12px;
+    font-weight: 600;
+    font-family: 'Sora', sans-serif;
+    cursor: pointer;
+    transition: background .15s;
+  }
+  .apply-btn:hover { background: #3a7be0; }
+
+  .reset-btn {
+    width: 100%;
+    padding: 6px 0;
+    background: var(--surface2);
+    color: var(--text-dim);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    font-size: 12px;
+    font-family: 'Sora', sans-serif;
+    cursor: pointer;
+    transition: background .15s;
+  }
+  .reset-btn:hover { background: var(--border); color: var(--text); }
+
+  /* save dialog */
+  .overlay {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,.6);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+  }
+  .overlay.show { display: flex; }
+  .dialog {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    width: 320px;
+    box-shadow: 0 20px 60px rgba(0,0,0,.5);
+  }
+  .dialog h3 { font-size: 14px; margin-bottom: 16px; color: var(--text); }
+  .dialog-row { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+  .dialog-row label { font-size: 12px; color: var(--text-dim); white-space: nowrap; }
+  .dialog-row input {
+    flex: 1;
+    padding: 5px 8px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    color: var(--text);
+    font-size: 12px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .dialog-row input:focus { outline: none; border-color: var(--accent); }
+  .dialog-hint { font-size: 11px; color: var(--text-muted); margin-bottom: 16px; }
+  .dialog-btns { display: flex; gap: 8px; justify-content: flex-end; }
+  .dialog-btns button {
+    padding: 6px 16px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-family: 'Sora', sans-serif;
+    cursor: pointer;
+    border: none;
+  }
+  .dialog-ok { background: var(--accent); color: #fff; }
+  .dialog-ok:hover { background: #3a7be0; }
+  .dialog-cancel { background: var(--surface2); color: var(--text-dim); border: 1px solid var(--border) !important; }
+  .dialog-cancel:hover { background: var(--border); }
+
+  /* toast */
+  .toast {
+    position: fixed;
+    bottom: 20px; right: 20px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 10px 16px;
+    font-size: 12px;
+    color: var(--text);
+    z-index: 200;
+    transform: translateY(20px);
+    opacity: 0;
+    transition: all .3s;
+    pointer-events: none;
+  }
+  .toast.show { transform: translateY(0); opacity: 1; }
+  .toast.success { border-color: var(--accent2); color: var(--accent2); }
+  .toast.error { border-color: var(--red); color: var(--red); }
+
+  select option { background: #ffffff; color: #1a202c; }
+</style>
 </head>
 <body>
 
-<div class="top-bar">
-    <input type="file" id="loadfile" accept=".xvg, .txt">
+<!-- Top bar -->
+<div class="topbar">
+  <span class="app-title">XVG<span>/XPM</span> Viewer</span>
+  <button class="open-btn" onclick="document.getElementById('fileInput').click()">
+    📂 打开文件
+  </button>
+  <input type="file" id="fileInput" accept=".xvg,.xpm,.txt">
+  <span class="file-label" id="fileLabel">未加载文件</span>
+  <span class="statusbar-msg" id="statusMsg">就绪</span>
 </div>
 
-<div class="main">
-    <div class="chart-wrap"><div id="pic"></div></div>
+<!-- Tabs -->
+<div class="tabs-row">
+  <button class="tab-btn active" id="tabXVG" onclick="switchTab('xvg')">📈 XVG 折线图</button>
+  <button class="tab-btn" id="tabXPM" onclick="switchTab('xpm')">🎨 XPM 热图</button>
+</div>
 
-    <div class="side-panel">
-        <div class="panel-heading">图表标题</div>
-        <div class="ctrl-group">
-            <label>主标题</label>
-            <input type="text" id="titleInput" placeholder="（自动读取）">
-        </div>
-        <div class="ctrl-group">
-            <label>副标题</label>
-            <input type="text" id="subtitleInput" placeholder="（自动读取）">
-        </div>
+<!-- Content -->
+<div class="content">
 
-        <div class="panel-heading">X 轴</div>
-        <div class="ctrl-group">
-            <label>标签名称</label>
-            <input type="text" id="xlabelInput" placeholder="（自动读取）">
-        </div>
-        <div class="two-col">
-            <div class="ctrl-group">
-                <label>最小值</label>
-                <input type="number" id="xminInput" placeholder="自动" step="any">
-            </div>
-            <div class="ctrl-group">
-                <label>最大值</label>
-                <input type="number" id="xmaxInput" placeholder="自动" step="any">
-            </div>
-        </div>
-        <div class="ctrl-group">
-            <label>刻度间隔</label>
-            <input type="number" id="xintervalInput" placeholder="自动" min="0" step="any">
-        </div>
-
-        <div class="panel-heading">Y 轴</div>
-        <div class="ctrl-group">
-            <label>标签名称</label>
-            <input type="text" id="ylabelInput" placeholder="（自动读取）">
-        </div>
-        <div class="two-col">
-            <div class="ctrl-group">
-                <label>最小值</label>
-                <input type="number" id="yminInput" placeholder="自动" step="any">
-            </div>
-            <div class="ctrl-group">
-                <label>最大值</label>
-                <input type="number" id="ymaxInput" placeholder="自动" step="any">
-            </div>
-        </div>
-        <div class="ctrl-group">
-            <label>刻度间隔</label>
-            <input type="number" id="yintervalInput" placeholder="自动" min="0" step="any">
-        </div>
-
-        <div class="panel-heading">显示选项</div>
-        <div class="ctrl-group" style="flex-direction:row; align-items:center; gap:8px;">
-            <input type="checkbox" id="gridToggle" style="width:auto; margin:0;" checked>
-            <label for="gridToggle" style="font-size:12px; color:#444; cursor:pointer;">显示网格线</label>
-        </div>
-
-        <div class="spacer"></div>
-        <div class="btn-group">
-            <button class="apply-btn" id="applyBtn">应用设置</button>
-            <button class="reset-btn" id="resetBtn">重置为默认</button>
-        </div>
+  <!-- ══ XVG Panel ══ -->
+  <div class="tab-panel active" id="panelXVG">
+    <div class="chart-area">
+      <div class="chart-toolbar">
+        <button class="tb-btn" onclick="saveXVG()">💾 保存图形</button>
+      </div>
+      <div class="chart-box" id="xvgChartBox">
+        <div id="xvgChart" style="width:100%;height:100%;"></div>
+      </div>
     </div>
+    <div class="side-panel">
+      <div class="panel-scroll">
+
+        <div class="grp">
+          <div class="grp-title">图表标题</div>
+          <div class="ctrl"><label>主标题</label><input type="text" id="xvg_title" placeholder="自动读取"></div>
+          <div class="ctrl"><label>副标题</label><input type="text" id="xvg_subtitle" placeholder="自动读取"></div>
+        </div>
+
+        <div class="grp">
+          <div class="grp-title">X 轴</div>
+          <div class="ctrl"><label>标签名称</label><input type="text" id="xvg_xlabel" placeholder="自动读取"></div>
+          <div class="two-col">
+            <div class="ctrl"><label>最小值</label><input type="number" id="xvg_xmin" placeholder="自动" step="any"></div>
+            <div class="ctrl"><label>最大值</label><input type="number" id="xvg_xmax" placeholder="自动" step="any"></div>
+          </div>
+          <div class="ctrl"><label>刻度间隔</label><input type="number" id="xvg_xint" placeholder="自动" step="any"></div>
+          <div class="ctrl"><label>刻度精度 (小数位)</label><input type="number" id="xvg_xprec" placeholder="自动" min="0" max="10"></div>
+          <div class="ctrl"><label>缩放因子</label><input type="number" id="xvg_scalex" placeholder="例: 0.001" step="any"></div>
+          <div class="ctrl"><label>单位换算</label>
+            <select id="xvg_unitx">
+              <option value="">(原单位)</option>
+              <optgroup label="时间">
+                <option value="fs">fs</option><option value="ps">ps</option>
+                <option value="ns">ns</option><option value="us">us</option>
+                <option value="ms">ms</option><option value="s">s</option>
+              </optgroup>
+              <optgroup label="长度">
+                <option value="angstrom">Å</option><option value="nm">nm</option>
+                <option value="um">μm</option><option value="mm">mm</option>
+                <option value="cm">cm</option><option value="m">m</option>
+              </optgroup>
+            </select>
+          </div>
+        </div>
+
+        <div class="grp">
+          <div class="grp-title">Y 轴</div>
+          <div class="ctrl"><label>标签名称</label><input type="text" id="xvg_ylabel" placeholder="自动读取"></div>
+          <div class="two-col">
+            <div class="ctrl"><label>最小值</label><input type="number" id="xvg_ymin" placeholder="自动" step="any"></div>
+            <div class="ctrl"><label>最大值</label><input type="number" id="xvg_ymax" placeholder="自动" step="any"></div>
+          </div>
+          <div class="ctrl"><label>刻度间隔</label><input type="number" id="xvg_yint" placeholder="自动" step="any"></div>
+          <div class="ctrl"><label>刻度精度 (小数位)</label><input type="number" id="xvg_yprec" placeholder="自动" min="0" max="10"></div>
+          <div class="ctrl"><label>缩放因子</label><input type="number" id="xvg_scaley" placeholder="例: 1000" step="any"></div>
+          <div class="ctrl"><label>单位换算</label>
+            <select id="xvg_unity">
+              <option value="">(原单位)</option>
+              <optgroup label="时间">
+                <option value="fs">fs</option><option value="ps">ps</option>
+                <option value="ns">ns</option><option value="us">us</option>
+                <option value="ms">ms</option><option value="s">s</option>
+              </optgroup>
+              <optgroup label="长度">
+                <option value="angstrom">Å</option><option value="nm">nm</option>
+                <option value="um">μm</option><option value="mm">mm</option>
+                <option value="cm">cm</option><option value="m">m</option>
+              </optgroup>
+            </select>
+          </div>
+        </div>
+
+        <div class="grp">
+          <div class="grp-title">显示选项</div>
+          <div class="ctrl-row"><input type="checkbox" id="xvg_grid" checked><label for="xvg_grid">显示网格线</label></div>
+          <div class="ctrl-row"><input type="checkbox" id="xvg_legend" checked><label for="xvg_legend">显示图例</label></div>
+        </div>
+
+        <div class="grp">
+          <div class="grp-title">字体</div>
+          <div class="ctrl"><label>字号</label><input type="number" id="xvg_fontsize" placeholder="14" min="8" max="32"></div>
+        </div>
+
+      </div>
+      <div class="panel-footer">
+        <button class="apply-btn" onclick="applyXVG()">应用设置</button>
+        <button class="reset-btn" onclick="resetXVG()">重置为默认</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ XPM Panel ══ -->
+  <div class="tab-panel" id="panelXPM">
+    <div class="chart-area">
+      <div class="chart-toolbar">
+        <button class="tb-btn" onclick="saveXPM()">💾 保存图形</button>
+      </div>
+      <div class="chart-box" id="xpmChartBox">
+        <div id="xpmChart" style="width:100%;height:100%;"></div>
+      </div>
+    </div>
+    <div class="side-panel">
+      <div class="panel-scroll">
+
+        <div class="grp">
+          <div class="grp-title">图表标题</div>
+          <div class="ctrl"><label>主标题</label><input type="text" id="xpm_title" placeholder="自动读取"></div>
+        </div>
+
+        <div class="grp">
+          <div class="grp-title">X 轴</div>
+          <div class="ctrl"><label>标签名称</label><input type="text" id="xpm_xlabel" placeholder="自动读取"></div>
+          <div class="two-col">
+            <div class="ctrl"><label>最小值</label><input type="number" id="xpm_xmin" placeholder="自动" step="any"></div>
+            <div class="ctrl"><label>最大值</label><input type="number" id="xpm_xmax" placeholder="自动" step="any"></div>
+          </div>
+          <div class="ctrl"><label>刻度间隔</label><input type="number" id="xpm_xint" placeholder="自动" step="any"></div>
+          <div class="ctrl"><label>刻度精度 (小数位)</label><input type="number" id="xpm_xprec" placeholder="自动" min="0" max="10"></div>
+          <div class="ctrl"><label>缩放因子</label><input type="number" id="xpm_scalex" placeholder="例: 0.001" step="any"></div>
+          <div class="ctrl"><label>单位换算</label>
+            <select id="xpm_unitx">
+              <option value="">(原单位)</option>
+              <optgroup label="时间">
+                <option value="fs">fs</option><option value="ps">ps</option>
+                <option value="ns">ns</option><option value="us">us</option>
+                <option value="ms">ms</option><option value="s">s</option>
+              </optgroup>
+              <optgroup label="长度">
+                <option value="angstrom">Å</option><option value="nm">nm</option>
+                <option value="um">μm</option><option value="mm">mm</option>
+                <option value="cm">cm</option><option value="m">m</option>
+              </optgroup>
+            </select>
+          </div>
+        </div>
+
+        <div class="grp">
+          <div class="grp-title">Y 轴</div>
+          <div class="ctrl"><label>标签名称</label><input type="text" id="xpm_ylabel" placeholder="自动读取"></div>
+          <div class="two-col">
+            <div class="ctrl"><label>最小值</label><input type="number" id="xpm_ymin" placeholder="自动" step="any"></div>
+            <div class="ctrl"><label>最大值</label><input type="number" id="xpm_ymax" placeholder="自动" step="any"></div>
+          </div>
+          <div class="ctrl"><label>刻度间隔</label><input type="number" id="xpm_yint" placeholder="自动" step="any"></div>
+          <div class="ctrl"><label>刻度精度 (小数位)</label><input type="number" id="xpm_yprec" placeholder="自动" min="0" max="10"></div>
+          <div class="ctrl"><label>缩放因子</label><input type="number" id="xpm_scaley" placeholder="例: 1000" step="any"></div>
+          <div class="ctrl"><label>单位换算</label>
+            <select id="xpm_unity">
+              <option value="">(原单位)</option>
+              <optgroup label="时间">
+                <option value="fs">fs</option><option value="ps">ps</option>
+                <option value="ns">ns</option><option value="us">us</option>
+                <option value="ms">ms</option><option value="s">s</option>
+              </optgroup>
+              <optgroup label="长度">
+                <option value="angstrom">Å</option><option value="nm">nm</option>
+                <option value="um">μm</option><option value="mm">mm</option>
+                <option value="cm">cm</option><option value="m">m</option>
+              </optgroup>
+            </select>
+          </div>
+        </div>
+
+        <div class="grp">
+          <div class="grp-title">色阶</div>
+          <div class="ctrl"><label>色板</label>
+            <select id="xpm_cmap">
+              <option value="auto">文件原色 (自动)</option>
+              <option value="jet">Jet</option>
+              <option value="viridis">Viridis</option>
+              <option value="plasma">Plasma</option>
+              <option value="inferno">Inferno</option>
+              <option value="magma">Magma</option>
+              <option value="cool">Cool</option>
+              <option value="hot">Hot</option>
+              <option value="rdbu">RdBu</option>
+              <option value="rdylbu">RdYlBu</option>
+              <option value="greys">Greys</option>
+            </select>
+          </div>
+          <div class="two-col">
+            <div class="ctrl"><label>色阶最小</label><input type="number" id="xpm_vmin" placeholder="自动" step="any"></div>
+            <div class="ctrl"><label>色阶最大</label><input type="number" id="xpm_vmax" placeholder="自动" step="any"></div>
+          </div>
+          <div class="ctrl"><label>色阶精度 (小数位)</label><input type="number" id="xpm_zprec" placeholder="自动" min="0" max="10"></div>
+          <div class="ctrl"><label>Z 缩放因子</label><input type="number" id="xpm_scalez" placeholder="例: 0.001" step="any"></div>
+        </div>
+
+        <div class="grp">
+          <div class="grp-title">显示选项</div>
+          <div class="ctrl-row"><input type="checkbox" id="xpm_grid"><label for="xpm_grid">显示网格线</label></div>
+          <div class="ctrl-row"><input type="checkbox" id="xpm_aspect"><label for="xpm_aspect">等比轴</label></div>
+        </div>
+
+        <div class="grp">
+          <div class="grp-title">字体</div>
+          <div class="ctrl"><label>字号</label><input type="number" id="xpm_fontsize" placeholder="14" min="8" max="32"></div>
+        </div>
+
+      </div>
+      <div class="panel-footer">
+        <button class="apply-btn" onclick="applyXPM()">应用设置</button>
+        <button class="reset-btn" onclick="resetXPM()">重置为默认</button>
+      </div>
+    </div>
+  </div>
+
 </div>
 
-<footer>
-    XVG可视化工具 v1.1 &copy; <a href="https://github.com/liuyujie714">liuyujie714</a>
-</footer>
+<!-- Save Dialog -->
+<div class="overlay" id="saveOverlay">
+  <div class="dialog">
+    <h3>💾 保存图形</h3>
+    <div class="dialog-row">
+      <label>DPI:</label>
+      <input type="number" id="saveDPI" value="300" min="50" max="1200" step="50">
+    </div>
+    <div class="dialog-row">
+      <label>文件名:</label>
+      <input type="text" id="saveFilename" value="Figure" placeholder="文件名 (不含扩展名)">
+    </div>
+    <div class="dialog-row">
+      <label>格式:</label>
+      <select id="saveFormat" style="flex:1;padding:5px 8px;background:var(--bg);border:1px solid var(--border);border-radius:5px;color:var(--text);font-size:12px;">
+        <option value="png">PNG</option>
+        <option value="svg">SVG</option>
+        <option value="jpeg">JPEG</option>
+      </select>
+    </div>
+    <div class="dialog-hint">注意：浏览器端 DPI 设置仅影响 PNG 输出的像素倍率</div>
+    <div class="dialog-btns">
+      <button class="dialog-cancel" onclick="closeSaveDialog()">取消</button>
+      <button class="dialog-ok" onclick="confirmSave()">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
 
 <script>
-    var $ = id => document.getElementById(id);
+// ══════════════════════════════════════════════════════
+//  Global state
+// ══════════════════════════════════════════════════════
+let xvgData = null, xpmData = null;
+let xvgChart = null, xpmChart = null;
+let pendingSaveChart = null;
+let currentTab = 'xvg';
 
-    const initData = () => ({
-        title:'', xlabel:'', ylabel:'', type:'xy', subtitle:'', legends:[], data:[]
-    });
+// ── ECharts init ──
+function getChart(id, chartRef) {
+  if (chartRef) chartRef.dispose();
+  return echarts.init(document.getElementById(id), null, { renderer: 'canvas' });
+}
 
-    var g_data = initData();
-    var g_mychart = null;
+// ══════════════════════════════════════════════════════
+//  Tabs
+// ══════════════════════════════════════════════════════
+function switchTab(tab) {
+  currentTab = tab;
+  document.getElementById('panelXVG').classList.toggle('active', tab === 'xvg');
+  document.getElementById('panelXPM').classList.toggle('active', tab === 'xpm');
+  document.getElementById('tabXVG').classList.toggle('active', tab === 'xvg');
+  document.getElementById('tabXPM').classList.toggle('active', tab === 'xpm');
+  setTimeout(() => {
+    if (tab === 'xvg' && xvgChart) xvgChart.resize();
+    if (tab === 'xpm' && xpmChart) xpmChart.resize();
+  }, 50);
+}
 
-    $("loadfile").addEventListener("change", function () {
-        let r = new FileReader();
-        r.onload = function () {
-            g_data = initData();
-            r.result.split('\n').forEach(line => {
-                if (line.startsWith('#')) return;
-                if (line.startsWith('@')) {
-                    let d = line.trim().split(/\s+/);
-                    if (d.length >= 2) {
-                        switch (d[1]) {
-                            case 'title':    g_data.title    = line.split('"')[1].trim(); break;
-                            case 'xaxis':    g_data.xlabel   = line.split('"')[1].trim(); break;
-                            case 'yaxis':    g_data.ylabel   = line.split('"')[1].trim(); break;
-                            case 'subtitle': g_data.subtitle = line.split('"')[1].trim(); break;
-                        }
-                        if (d[0] === "@TYPE") g_data.type = d[1];
-                        if (line.match(/@\s*s(\d+)\s+legend\s+"([^"]*)"/))
-                            g_data.legends.push(line.split('"')[1].trim());
-                    }
-                } else {
-                    let d = line.trim().split(/\s+/);
-                    if (d.length >= 2) g_data.data.push(d.map(x => parseFloat(x)));
-                }
-            });
-            syncInputsFromData();
-            updateChart();
-        };
-        r.readAsText(this.files[0]);
-    });
+// ══════════════════════════════════════════════════════
+//  Unit conversion tables
+// ══════════════════════════════════════════════════════
+const TIME_UNITS   = { fs:1, ps:1e-3, ns:1e-6, us:1e-9, ms:1e-12, s:1e-15 };
+const LENGTH_UNITS = { angstrom:1, a:1, nm:1e-1, um:1e-4, mm:1e-7, cm:1e-8, dm:1e-9, m:1e-10 };
 
-    function syncInputsFromData() {
-        $("xlabelInput").value   = g_data.xlabel   || '';
-        $("ylabelInput").value   = g_data.ylabel   || '';
-        $("titleInput").value    = g_data.title    || '';
-        $("subtitleInput").value = g_data.subtitle || '';
-        ['xmin','xmax','xinterval','ymin','ymax','yinterval']
-            .forEach(id => $(id+'Input').value = '');
+function unitFactor(src, dst) {
+  const s = src.toLowerCase(), d = dst.toLowerCase();
+  for (const tbl of [TIME_UNITS, LENGTH_UNITS]) {
+    if (s in tbl && d in tbl) return tbl[d] / tbl[s];
+  }
+  return null;
+}
+
+function parseUnitFromLabel(label) {
+  const m = label.toLowerCase().match(/\(([^)]+)\)/);
+  if (m) {
+    const tok = m[1].trim();
+    if (tok in TIME_UNITS || tok in LENGTH_UNITS) return tok;
+  }
+  return null;
+}
+
+// ══════════════════════════════════════════════════════
+//  XmgrDecode (xmgrace → unicode/LaTeX-like)
+// ══════════════════════════════════════════════════════
+const GREEK = {
+  x:'ξ', a:'α', q:'θ', c:'χ', d:'δ', e:'ε', y:'ψ',
+  g:'γ', h:'η', f:'φ', k:'κ', l:'λ', r:'ρ', m:'μ'
+};
+
+function xmgrDecode(s) {
+  if (!s) return s;
+  // subscript: \s...\N
+  s = s.replace(/\\s(.*?)\\N/g, (_,g) => `${g}`.split('').map(c=>`${c}`).join(''));
+  // superscript: \S...\N
+  s = s.replace(/\\S(.*?)\\N/g, (_,g) => g);
+  // Greek: \x<letter>\f{}
+  s = s.replace(/\\x([a-z])\\f\{\}/g, (_,c) => GREEK[c] || c);
+  return s;
+}
+
+// ══════════════════════════════════════════════════════
+//  XVG Parser
+// ══════════════════════════════════════════════════════
+function parseXVG(text) {
+  const d = { title:'', subtitle:'', xlabel:'', ylabel:'', legends:[], xdata:[], ydata:[] };
+  const raw = [];
+
+  for (const line of text.split('\n')) {
+    const l = line.trim();
+    if (l.startsWith('#') || l.startsWith('&')) continue;
+    if (l.startsWith('@')) {
+      if (/@ +title/.test(l)) { const m = l.match(/"([^"]*)"/); if (m) d.title = m[1]; }
+      else if (/@ +subtitle/.test(l)) { const m = l.match(/"([^"]*)"/); if (m) d.subtitle = m[1]; }
+      else if (/@ +xaxis/.test(l)) { const m = l.match(/"([^"]*)"/); if (m) d.xlabel = m[1]; }
+      else if (/@ +yaxis/.test(l)) { const m = l.match(/"([^"]*)"/); if (m) d.ylabel = m[1]; }
+      else if (/@ s\d+ legend/.test(l)) { const m = l.match(/"([^"]*)"/); if (m) d.legends.push(m[1]); }
+    } else {
+      const parts = l.split(/\s+/).map(Number).filter((v, i, a) => !isNaN(v) || (l.split(/\s+/)[i] !== ''));
+      const nums = l.split(/\s+/).map(n => parseFloat(n)).filter(n => !isNaN(n));
+      if (nums.length >= 2) raw.push(nums);
+    }
+  }
+
+  if (!raw.length) throw new Error('No numeric data found in XVG file.');
+
+  d.xdata = raw.map(r => r[0]);
+  // avoid spread on potentially huge array
+  let ncols = 0;
+  for (let i = 0; i < raw.length; i++) if (raw[i].length > ncols) ncols = raw[i].length;
+  for (let i = 1; i < ncols; i++) d.ydata.push(raw.map(r => r[i] !== undefined ? r[i] : NaN));
+  if (!d.legends.length) d.ydata.forEach((_, i) => d.legends.push(`Series ${i+1}`));
+
+  d.title   = xmgrDecode(d.title);
+  d.subtitle = xmgrDecode(d.subtitle);
+  d.xlabel  = xmgrDecode(d.xlabel);
+  d.ylabel  = xmgrDecode(d.ylabel);
+  d.legends = d.legends.map(xmgrDecode);
+  return d;
+}
+
+// ══════════════════════════════════════════════════════
+//  XPM Parser
+// ══════════════════════════════════════════════════════
+const SS_MAP = {
+  '~':'Coil','E':'B-Sheet','B':'B-Bridge','S':'Bend','T':'Turn',
+  'H':'A-Helix','I':'5-Helix','G':'3-Helix','P':'PP-Helix','=':'Chain'
+};
+
+function parseXPM(text) {
+  const d = {
+    title:'', legend:'', xlabel:'', ylabel:'', xpmType:'Continuous',
+    nx:0, ny:0, nc:0, nb:1,
+    code2value:{}, valueList:[], hexcolors:[],
+    xticks:[], yticks:[], matrix:null
+  };
+
+  const lines = text.split('\n');
+
+  // meta from comments
+  for (const line of lines) {
+    const l = line.trim();
+    for (const [tag, attr] of [['title','title'],['legend','legend'],['x-label','xlabel'],['y-label','ylabel']]) {
+      const m = l.match(new RegExp(`\\/\\*\\s*${tag}:\\s*"([^"]*)"`, 'i'));
+      if (m) d[attr] = m[1];
+    }
+    const mt = l.match(/\/\*\s*type:\s*"([^"]*)"/i);
+    if (mt) d.xpmType = mt[1];
+  }
+
+  let inArray = false, headerDone = false, colorsDone = false;
+  const rawMatrix = [], xaxisData = [], yaxisData = [];
+
+  for (const line of lines) {
+    const raw = line.trimEnd();
+    if (!inArray) { if (raw.includes('static char')) inArray = true; continue; }
+    if (raw.includes('x-axis:')) {
+      const nums = raw.match(/[-+]?\d*\.?\d+(?:[eE][-+]?\d+)?/g);
+      if (nums) for (let i = 0; i < nums.length; i++) xaxisData.push(+nums[i]);
+      continue;
+    }
+    if (raw.includes('y-axis:')) {
+      const nums = raw.match(/[-+]?\d*\.?\d+(?:[eE][-+]?\d+)?/g);
+      if (nums) for (let i = 0; i < nums.length; i++) yaxisData.push(+nums[i]);
+      continue;
+    }
+    const qm = raw.match(/"([^"]*)"/);
+    if (!qm) continue;
+    const content = qm[1];
+    const cm = raw.match(/\/\*\s*(.*?)\s*\*\//);
+    const comment = cm ? cm[1] : '';
+
+    if (!headerDone) {
+      const parts = content.split(/\s+/);
+      if (parts.length >= 4) {
+        d.nx = parseInt(parts[0]); d.ny = parseInt(parts[1]);
+        d.nc = parseInt(parts[2]); d.nb = parseInt(parts[3]) || 1;
+        headerDone = true;
+      }
+      continue;
     }
 
-    function getAx() {
-        return ['title','subtitle','xlabel','ylabel','xmin','xmax','xinterval','ymin','ymax','yinterval']
-            .reduce((o,k) => { o[k] = $(k+'Input').value; return o; }, {});
-    }
-
-    function getGridShow() {
-        return $('gridToggle').checked;
-    }
-
-    function updateChart() {
-        if (!g_data.data.length) { alert('没有有效数据'); return; }
-        var ax = getAx();
-        let series = [], isCategory = g_data.type === 'bar';
-
-        if (isCategory) {
-            for (let i = 1; i < g_data.data[0].length; i++)
-                series.push({
-                    name: g_data.legends[i-1] || `Series ${i}`,
-                    type: 'bar',
-                    data: g_data.data.map(r => r[i])
-                });
-        } else {
-            for (let i = 1; i < g_data.data[0].length; i++)
-                series.push({
-                    name: g_data.legends[i-1] || `Series ${i}`,
-                    type: 'line', showSymbol: false,
-                    data: g_data.data.map(r => [r[0], r[i]])
-                });
-            if (!series.length)
-                series.push({ name:'Data Series', type:'line', showSymbol:false,
-                    data: g_data.data.map(r => [r[0], r[1]]) });
+    if (!colorsDone) {
+      const sym = content.substring(0, d.nb);
+      const hm = content.match(/#([0-9a-fA-F]{6})/);
+      d.hexcolors.push(hm ? '#' + hm[1] : '#000000');
+      const vm = comment.match(/"([^"]*)"/);
+      let value;
+      if (vm) {
+        const lbl = vm[1];
+        value = parseFloat(lbl);
+        if (isNaN(value)) {
+          value = Object.keys(d.code2value).length;
+          d.valueList.push(SS_MAP[lbl] || lbl);
         }
-
-
-        let xCfg = {
-            name: ax.xlabel,
-            nameLocation:'middle', nameGap:30,
-            axisLine:{
-                show:true,
-                lineStyle:{
-                    color: '#cccccc',
-                }
-            },
-            axisTick:{show:true},
-            splitLine:{ show: getGridShow() },
-            axisLabel: {
-                formatter: function(value) {
-                    return value;
-                }
-            }
-        };
-        if (isCategory) {
-            xCfg.type = 'category';
-            xCfg.data = g_data.data.map(r => r[0]);
-        } else {
-            xCfg.type = 'value';
-            if (ax.xmin !== '')      xCfg.min      = +ax.xmin;
-            if (ax.xmax !== '')      xCfg.max      = +ax.xmax;
-            if (ax.xinterval !== '') xCfg.interval = +ax.xinterval;
-        }
-
-        let yCfg = {
-            type:'value',
-            name: ax.ylabel,
-            nameLocation:'center', nameGap:40,
-            axisLine:{
-                show:true,
-                lineStyle:{
-                    color: '#cccccc',
-                }
-            },
-            axisTick:{show:true},
-            splitLine:{ show: getGridShow() },
-            axisLabel: {
-                formatter: function(value) {
-                    return value;
-                }
-            }
-        };
-        if (ax.ymin !== '')      yCfg.min      = +ax.ymin;
-        if (ax.ymax !== '')      yCfg.max      = +ax.ymax;
-        if (ax.yinterval !== '') yCfg.interval = +ax.yinterval;
-
-        echarts.registerTheme('gft', {
-            textStyle: { fontFamily:'"Times New Roman",Arial,"Microsoft YaHei",sans-serif', fontSize:14, color:'#000' }
-        });
-
-        if (!g_mychart) g_mychart = echarts.init($('pic'), 'gft');
-
-        g_mychart.setOption({
-            title: { text: ax.title, subtext: ax.subtitle },
-            tooltip: { trigger:'axis' },
-            toolbox: { show:true, feature:{
-                dataZoom:{yAxisIndex:'none'}, dataView:{readOnly:false},
-                magicType:{type:['line','bar']}, restore:{}, saveAsImage:{pixelRatio:5}
-            }},
-            legend: { data:series.map(s=>s.name), right:10, top:'center', orient:'vertical' },
-            xAxis: xCfg,
-            yAxis: yCfg,
-            series: series
-        }, true);
-
-        g_mychart.resize();
+      } else {
+        value = Object.keys(d.code2value).length;
+        d.valueList.push(`State ${value}`);
+      }
+      d.code2value[sym] = value;
+      if (Object.keys(d.code2value).length === d.nc) colorsDone = true;
+      continue;
     }
 
-    $("applyBtn").addEventListener("click", () => { if (g_data.data.length) updateChart(); });
-    $("resetBtn").addEventListener("click", () => { syncInputsFromData(); if (g_data.data.length) updateChart(); });
-    $("gridToggle").addEventListener("change", () => { if (g_data.data.length) updateChart(); });
-
-    function resizeChart() {
-        var wrap = document.querySelector('.chart-wrap');
-        var pic = $('pic');
-        if (wrap && pic) {
-            pic.style.height = wrap.clientHeight + 'px';
-            if (g_mychart) g_mychart.resize();
-        }
+    if (content.length === d.nx * d.nb) {
+      const row = [];
+      for (let c = 0; c < d.nx; c++) {
+        const sym = content.substring(c * d.nb, (c + 1) * d.nb);
+        row.push(d.code2value[sym] !== undefined ? d.code2value[sym] : 0);
+      }
+      rawMatrix.push(row);
     }
-    window.addEventListener('resize', resizeChart);
-    window.addEventListener('load', resizeChart);
-    setTimeout(resizeChart, 50);
+  }
+
+  rawMatrix.reverse();
+  d.xticks = xaxisData.length ? xaxisData.slice(0, d.nx) : Array.from({length:d.nx}, (_,i) => i);
+  d.yticks = yaxisData.length ? yaxisData.slice(0, d.ny) : Array.from({length:d.ny}, (_,i) => i);
+  d.matrix = rawMatrix;
+
+  // transpose if needed — use explicit loop to avoid stack overflow on large matrices
+  if (d.matrix.length === d.xticks.length && d.matrix[0] && d.matrix[0].length === d.yticks.length) {
+    const rows = d.xticks.length, cols = d.yticks.length;
+    const t = new Array(cols);
+    for (let c = 0; c < cols; c++) {
+      t[c] = new Array(rows);
+      for (let r = 0; r < rows; r++) t[c][r] = d.matrix[r][c];
+    }
+    d.matrix = t;
+    [d.xticks, d.yticks] = [d.yticks, d.xticks];
+  }
+
+  d.title  = xmgrDecode(d.title);
+  d.xlabel = xmgrDecode(d.xlabel);
+  d.ylabel = xmgrDecode(d.ylabel);
+  d.legend = xmgrDecode(d.legend);
+  return d;
+}
+
+// ══════════════════════════════════════════════════════
+//  File loading
+// ══════════════════════════════════════════════════════
+document.getElementById('fileInput').addEventListener('change', function() {
+  const file = this.files[0];
+  if (!file) return;
+  document.getElementById('fileLabel').textContent = file.name;
+
+  const reader = new FileReader();
+  reader.onload = e => {
+    const text = e.target.result;
+    const ext  = file.name.split('.').pop().toLowerCase();
+    try {
+      if (ext === 'xpm') {
+        xpmData = parseXPM(text);
+        syncXPMInputs();
+        applyXPM();
+        switchTab('xpm');
+        setStatus(`已加载 XPM: ${xpmData.nx}×${xpmData.ny}, ${xpmData.nc} 色, 类型: ${xpmData.xpmType}`);
+      } else {
+        xvgData = parseXVG(text);
+        syncXVGInputs();
+        applyXVG();
+        switchTab('xvg');
+        setStatus(`已加载 XVG: ${xvgData.xdata.length} 点, ${xvgData.ydata.length} 系列`);
+      }
+    } catch(err) {
+      showToast('解析失败: ' + err.message, 'error');
+      setStatus('加载失败');
+    }
+  };
+  reader.readAsText(file);
+  this.value = '';
+});
+
+function syncXVGInputs() {
+  if (!xvgData) return;
+  document.getElementById('xvg_title').value    = xvgData.title;
+  document.getElementById('xvg_subtitle').value = xvgData.subtitle;
+  document.getElementById('xvg_xlabel').value   = xvgData.xlabel;
+  document.getElementById('xvg_ylabel').value   = xvgData.ylabel;
+  ['xvg_xmin','xvg_xmax','xvg_xint','xvg_xprec','xvg_scalex',
+   'xvg_ymin','xvg_ymax','xvg_yint','xvg_yprec','xvg_scaley'].forEach(id => {
+    document.getElementById(id).value = '';
+  });
+  document.getElementById('xvg_unitx').value = '';
+  document.getElementById('xvg_unity').value = '';
+}
+
+function syncXPMInputs() {
+  if (!xpmData) return;
+  document.getElementById('xpm_title').value  = xpmData.title;
+  document.getElementById('xpm_xlabel').value = xpmData.xlabel;
+  document.getElementById('xpm_ylabel').value = xpmData.ylabel;
+  ['xpm_xmin','xpm_xmax','xpm_xint','xpm_xprec','xpm_scalex',
+   'xpm_ymin','xpm_ymax','xpm_yint','xpm_yprec','xpm_scaley',
+   'xpm_vmin','xpm_vmax','xpm_zprec','xpm_scalez'].forEach(id => {
+    document.getElementById(id).value = '';
+  });
+  document.getElementById('xpm_unitx').value = '';
+  document.getElementById('xpm_unity').value = '';
+  document.getElementById('xpm_cmap').value = 'auto';
+  document.getElementById('xpm_aspect').checked = false;
+}
+
+// ══════════════════════════════════════════════════════
+//  Helpers
+// ══════════════════════════════════════════════════════
+function v(id) { return document.getElementById(id).value.trim(); }
+function vf(id) { const t = v(id); return t !== '' ? parseFloat(t) : null; }
+function vi(id) { const t = v(id); return t !== '' ? parseInt(t) : null; }
+function vc(id) { return document.getElementById(id).checked; }
+
+function setStatus(msg) { document.getElementById('statusMsg').textContent = msg; }
+
+function showToast(msg, type='success') {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = `toast show ${type}`;
+  setTimeout(() => el.classList.remove('show'), 3000);
+}
+
+function applyUnitX(xdata, xlabel_orig) {
+  const dst = v('xvg_unitx') || v('xpm_unitx');
+  const src = parseUnitFromLabel(xlabel_orig);
+  let x = [...xdata], xl = xlabel_orig;
+  if (dst && src) {
+    const f = unitFactor(src, dst);
+    if (f !== null) {
+      x = x.map(v => v * f);
+      xl = xl.replace(/\([^)]+\)/, `(${dst})`);
+    }
+  }
+  return { x, xl };
+}
+
+function applyUnitY(ydata, ylabel_orig, prefix) {
+  const dst = v(`${prefix}_unity`);
+  const src = parseUnitFromLabel(ylabel_orig);
+  let yd = ydata.map(arr => [...arr]), yl = ylabel_orig;
+  if (dst && src) {
+    const f = unitFactor(src, dst);
+    if (f !== null) {
+      yd = yd.map(arr => arr.map(v => v * f));
+      yl = yl.replace(/\([^)]+\)/, `(${dst})`);
+    }
+  }
+  return { yd, yl };
+}
+
+// ══════════════════════════════════════════════════════
+//  ECharts colormap palettes
+// ══════════════════════════════════════════════════════
+function getCmapColors(name, n) {
+  const maps = {
+    jet: [
+      [0,'#00007f'],[.125,'#0000ff'],[.25,'#007fff'],[.375,'#00ffff'],
+      [.5,'#7fff7f'],[.625,'#ffff00'],[.75,'#ff7f00'],[.875,'#ff0000'],[1,'#7f0000']
+    ],
+    viridis: [
+      [0,'#440154'],[.2,'#3b528b'],[.4,'#21918c'],[.6,'#5ec962'],[.8,'#fde725'],[1,'#fde725']
+    ],
+    plasma: [
+      [0,'#0d0887'],[.25,'#7e03a8'],[.5,'#cc4778'],[.75,'#f89441'],[1,'#f0f921']
+    ],
+    inferno: [
+      [0,'#000004'],[.25,'#57106e'],[.5,'#bc3754'],[.75,'#f98e09'],[1,'#fcffa4']
+    ],
+    magma: [
+      [0,'#000004'],[.25,'#51127c'],[.5,'#b73779'],[.75,'#fc8961'],[1,'#fcfdbf']
+    ],
+    cool: [[0,'#00ffff'],[1,'#ff00ff']],
+    hot: [[0,'#000000'],[.33,'#ff0000'],[.67,'#ffff00'],[1,'#ffffff']],
+    rdbu: [[0,'#053061'],[.25,'#4393c3'],[.5,'#f7f7f7'],[.75,'#d6604d'],[1,'#67001f']],
+    rdylbu: [[0,'#4575b4'],[.25,'#91bfdb'],[.5,'#ffffbf'],[.75,'#fc8d59'],[1,'#d73027']],
+    greys: [[0,'#ffffff'],[1,'#000000']]
+  };
+  return maps[name] || maps['viridis'];
+}
+
+// ══════════════════════════════════════════════════════
+//  Apply XVG
+// ══════════════════════════════════════════════════════
+function applyXVG() {
+  if (!xvgData) return;
+  const d = xvgData;
+
+  let xdata = [...d.xdata];
+  let ydata = d.ydata.map(ys => [...ys]);
+  let xlabel = v('xvg_xlabel') || d.xlabel;
+  let ylabel = v('xvg_ylabel') || d.ylabel;
+
+  // Unit conversion
+  const dst_ux = v('xvg_unitx');
+  if (dst_ux) {
+    const src_ux = parseUnitFromLabel(d.xlabel);
+    if (src_ux) {
+      const f = unitFactor(src_ux, dst_ux);
+      if (f !== null) { xdata = xdata.map(v => v * f); xlabel = xlabel.replace(/\([^)]+\)/, `(${dst_ux})`); }
+    }
+  }
+  const dst_uy = v('xvg_unity');
+  if (dst_uy) {
+    const src_uy = parseUnitFromLabel(d.ylabel);
+    if (src_uy) {
+      const f = unitFactor(src_uy, dst_uy);
+      if (f !== null) { ydata = ydata.map(ys => ys.map(v => v * f)); ylabel = ylabel.replace(/\([^)]+\)/, `(${dst_uy})`); }
+    }
+  }
+
+  // Scale factors
+  const sx = vf('xvg_scalex'); if (sx !== null) xdata = xdata.map(v => v * sx);
+  const sy = vf('xvg_scaley'); if (sy !== null) ydata = ydata.map(ys => ys.map(v => v * sy));
+
+  const title    = v('xvg_title')    || d.title;
+  const subtitle = v('xvg_subtitle') || d.subtitle;
+  const xmin = vf('xvg_xmin'), xmax = vf('xvg_xmax');
+  const ymin = vf('xvg_ymin'), ymax = vf('xvg_ymax');
+  const xint = vf('xvg_xint'), yint = vf('xvg_yint');
+  const xprec = vi('xvg_xprec'), yprec = vi('xvg_yprec');
+  const fs = vf('xvg_fontsize') || 13;
+  const showGrid = vc('xvg_grid');
+  const showLegend = vc('xvg_legend');
+
+  // ECharts color palette (scientific)
+  const COLORS = ['#2c7cb0','#e07b39','#2ca05a','#c0392b','#8e44ad','#16a085','#d4ac0d','#1a5276','#cb4335','#117a65'];
+
+  const series = ydata.map((ys, i) => ({
+    name: d.legends[i] || `Series ${i+1}`,
+    type: 'line',
+    showSymbol: false,
+    lineStyle: { width: 1.5, color: COLORS[i % COLORS.length] },
+    color: COLORS[i % COLORS.length],
+    data: xdata.map((x, j) => [x, ys[j]])
+  }));
+
+  const xAxisCfg = {
+    type: 'value',
+    name: xlabel,
+    nameLocation: 'middle',
+    nameGap: 32,
+    nameTextStyle: { fontSize: fs, color: '#333' },
+    axisLabel: {
+      fontSize: fs - 2,
+      color: '#555',
+      formatter: xprec !== null ? v => v.toFixed(xprec) : undefined
+    },
+    axisLine: { lineStyle: { color: '#aaa' } },
+    axisTick: { lineStyle: { color: '#aaa' } },
+    splitLine: { show: showGrid, lineStyle: { color: '#e0e0e0', type: 'dashed' } },
+    min: xmin !== null ? xmin : undefined,
+    max: xmax !== null ? xmax : undefined,
+    interval: xint !== null ? xint : undefined,
+  };
+
+  const yAxisCfg = {
+    type: 'value',
+    name: ylabel,
+    nameLocation: 'middle',
+    nameGap: 50,
+    nameTextStyle: { fontSize: fs, color: '#333' },
+    axisLabel: {
+      fontSize: fs - 2,
+      color: '#555',
+      formatter: yprec !== null ? v => v.toFixed(yprec) : undefined
+    },
+    axisLine: { lineStyle: { color: '#aaa' } },
+    axisTick: { lineStyle: { color: '#aaa' } },
+    splitLine: { show: showGrid, lineStyle: { color: '#e0e0e0', type: 'dashed' } },
+    min: ymin !== null ? ymin : undefined,
+    max: ymax !== null ? ymax : undefined,
+    interval: yint !== null ? yint : undefined,
+  };
+
+  if (!xvgChart) xvgChart = echarts.init(document.getElementById('xvgChart'));
+
+  xvgChart.setOption({
+    backgroundColor: '#ffffff',
+    animation: false,
+    title: [
+      { text: title, subtext: subtitle, left: 'center', top: 6, textStyle: { color: '#1a202c', fontSize: fs + 1, fontFamily: 'Sora' }, subtextStyle: { color: '#666', fontSize: fs - 1 } }
+    ],
+    tooltip: { trigger: 'axis', backgroundColor: '#fff', borderColor: '#dde1e7', textStyle: { color: '#1a202c', fontSize: 11 } },
+    legend: showLegend ? {
+      data: series.map(s => s.name),
+      right: 14, top: subtitle ? 52 : 36,
+      orient: 'vertical',
+      textStyle: { color: '#333', fontSize: fs - 2 },
+      icon: 'circle'
+    } : { show: false },
+    toolbox: {
+      right: 14, top: 4,
+      feature: {
+        dataZoom: { yAxisIndex: 'none' },
+        restore: {},
+      },
+      iconStyle: { borderColor: '#999' }
+    },
+    grid: { left: 64, right: showLegend ? 130 : 30, top: subtitle ? 70 : 54, bottom: 48 },
+    xAxis: xAxisCfg,
+    yAxis: yAxisCfg,
+    series
+  }, true);
+}
+
+function resetXVG() { if (xvgData) { syncXVGInputs(); applyXVG(); } }
+
+// ══════════════════════════════════════════════════════
+//  Apply XPM
+// ══════════════════════════════════════════════════════
+function applyXPM() {
+  if (!xpmData) return;
+  const d = xpmData;
+
+  let X = d.xticks.slice(), Y = d.yticks.slice();
+  // safe deep copy — avoid spread on large rows
+  let matrix = new Array(d.matrix.length);
+  for (let i = 0; i < d.matrix.length; i++) matrix[i] = d.matrix[i].slice();
+  let xlabel = v('xpm_xlabel') || d.xlabel;
+  let ylabel = v('xpm_ylabel') || d.ylabel;
+
+  // Unit conversion
+  const dst_ux = v('xpm_unitx');
+  if (dst_ux) {
+    const src_ux = parseUnitFromLabel(d.xlabel);
+    if (src_ux) { const f = unitFactor(src_ux, dst_ux); if (f) { X = X.map(vv => vv * f); xlabel = xlabel.replace(/\([^)]+\)/, `(${dst_ux})`); } }
+  }
+  const dst_uy = v('xpm_unity');
+  if (dst_uy) {
+    const src_uy = parseUnitFromLabel(d.ylabel);
+    if (src_uy) { const f = unitFactor(src_uy, dst_uy); if (f) { Y = Y.map(vv => vv * f); ylabel = ylabel.replace(/\([^)]+\)/, `(${dst_uy})`); } }
+  }
+
+  // Scale factors — explicit loops to avoid stack issues on large matrices
+  const sx = vf('xpm_scalex'); if (sx !== null) for (let i = 0; i < X.length; i++) X[i] *= sx;
+  const sy = vf('xpm_scaley'); if (sy !== null) for (let i = 0; i < Y.length; i++) Y[i] *= sy;
+  const sz = vf('xpm_scalez');
+  if (sz !== null) {
+    for (let r = 0; r < matrix.length; r++)
+      for (let c = 0; c < matrix[r].length; c++) matrix[r][c] *= sz;
+  }
+
+  // Axis clip — build index arrays without object allocation
+  const xi_keep = [], xi_x = [], yi_keep = [], yi_y = [];
+  const xmin = vf('xpm_xmin'), xmax = vf('xpm_xmax');
+  const ymin = vf('xpm_ymin'), ymax = vf('xpm_ymax');
+  for (let i = 0; i < X.length; i++) {
+    if ((xmin === null || X[i] >= xmin) && (xmax === null || X[i] <= xmax)) { xi_keep.push(i); xi_x.push(X[i]); }
+  }
+  for (let i = 0; i < Y.length; i++) {
+    if ((ymin === null || Y[i] >= ymin) && (ymax === null || Y[i] <= ymax)) { yi_keep.push(i); yi_y.push(Y[i]); }
+  }
+  X = xi_x; Y = yi_y;
+  const clipped = new Array(yi_keep.length);
+  for (let r = 0; r < yi_keep.length; r++) {
+    const src = matrix[yi_keep[r]];
+    clipped[r] = new Array(xi_keep.length);
+    for (let c = 0; c < xi_keep.length; c++) clipped[r][c] = src ? (src[xi_keep[c]] !== undefined ? src[xi_keep[c]] : NaN) : NaN;
+  }
+  matrix = clipped;
+
+  const title  = v('xpm_title')  || d.title;
+  const xint   = vf('xpm_xint'), yint   = vf('xpm_yint');
+  const xprec  = vi('xpm_xprec'), yprec  = vi('xpm_yprec'), zprec = vi('xpm_zprec');
+  const vmin_v = vf('xpm_vmin'), vmax_v = vf('xpm_vmax');
+  const fs     = vf('xpm_fontsize') || 13;
+  const isDiscrete = d.xpmType.toLowerCase() === 'discrete';
+  const cmapName = v('xpm_cmap');
+
+  // Build echarts heatmap data: [xi, yi, value]
+  const edata = [];
+  for (let yi = 0; yi < Y.length; yi++) {
+    for (let xi = 0; xi < X.length; xi++) {
+      const val = matrix[yi] ? matrix[yi][xi] : NaN;
+      if (!isNaN(val)) edata.push([xi, yi, val]);
+    }
+  }
+
+  // Color range — avoid Math.min/max spread on large arrays
+  let zMin, zMax;
+  if (vmin_v !== null && vmax_v !== null) {
+    zMin = vmin_v; zMax = vmax_v;
+  } else {
+    zMin = Infinity; zMax = -Infinity;
+    for (let i = 0; i < edata.length; i++) {
+      const vv = edata[i][2];
+      if (vv < zMin) zMin = vv;
+      if (vv > zMax) zMax = vv;
+    }
+    if (vmin_v !== null) zMin = vmin_v;
+    if (vmax_v !== null) zMax = vmax_v;
+  }
+
+  // Colormap
+  let inRange;
+  if (cmapName === 'auto' || isDiscrete) {
+    if (d.hexcolors.length) {
+      if (isDiscrete) {
+        inRange = { color: d.hexcolors.slice(0, d.nc) };
+      } else {
+        inRange = { color: d.hexcolors };
+      }
+    } else {
+      inRange = { color: getCmapColors('viridis', 10).map(s => s[1]) };
+    }
+  } else {
+    inRange = { color: getCmapColors(cmapName, 10).map(s => s[1]) };
+  }
+
+  const xLabels = X.map(x => xprec !== null ? x.toFixed(xprec) : String(x));
+  const yLabels = Y.map(y => yprec !== null ? y.toFixed(yprec) : String(y));
+
+  if (!xpmChart) xpmChart = echarts.init(document.getElementById('xpmChart'));
+
+  // Determine tick interval for display
+  const xTickEvery = xint ? Math.max(1, Math.round(xint / (X.length > 1 ? Math.abs(X[1]-X[0]) : 1))) : Math.max(1, Math.floor(X.length / 10));
+  const yTickEvery = yint ? Math.max(1, Math.round(yint / (Y.length > 1 ? Math.abs(Y[1]-Y[0]) : 1))) : Math.max(1, Math.floor(Y.length / 10));
+
+  xpmChart.setOption({
+    backgroundColor: '#ffffff',
+    animation: false,
+    title: { text: title, left: 'center', top: 4, textStyle: { color: '#1a202c', fontSize: fs + 1, fontFamily: 'Sora' } },
+    tooltip: {
+      trigger: 'item',
+      backgroundColor: '#fff',
+      borderColor: '#dde1e7',
+      textStyle: { color: '#1a202c', fontSize: 11 },
+      formatter: p => {
+        const xi = p.data[0], yi = p.data[1], val = p.data[2];
+        const xv = X[xi] !== undefined ? (xprec !== null ? X[xi].toFixed(xprec) : X[xi]) : xi;
+        const yv = Y[yi] !== undefined ? (yprec !== null ? Y[yi].toFixed(yprec) : Y[yi]) : yi;
+        const zv = zprec !== null ? val.toFixed(zprec) : val;
+        return `X: ${xv}<br/>Y: ${yv}<br/>Z: ${zv}`;
+      }
+    },
+    grid: { left: 70, right: isDiscrete ? 140 : 80, top: 50, bottom: 58 },
+    xAxis: {
+      type: 'category',
+      data: xLabels,
+      name: xlabel, nameLocation: 'middle', nameGap: 30,
+      nameTextStyle: { fontSize: fs, color: '#333' },
+      axisLabel: {
+        fontSize: fs - 2, color: '#555', rotate: 0,
+        interval: xTickEvery - 1,
+      },
+      axisLine: { lineStyle: { color: '#aaa' } },
+      axisTick: { lineStyle: { color: '#aaa' } },
+      splitLine: { show: vc('xpm_grid'), lineStyle: { color: '#ddd', width: .5 } },
+    },
+    yAxis: {
+      type: 'category',
+      data: yLabels,
+      name: ylabel, nameLocation: 'middle', nameGap: 52,
+      nameTextStyle: { fontSize: fs, color: '#333' },
+      axisLabel: { fontSize: fs - 2, color: '#555', interval: yTickEvery - 1 },
+      axisLine: { lineStyle: { color: '#aaa' } },
+      axisTick: { lineStyle: { color: '#aaa' } },
+      splitLine: { show: vc('xpm_grid'), lineStyle: { color: '#ddd', width: .5 } },
+    },
+    visualMap: {
+      min: zMin, max: zMax,
+      calculable: !isDiscrete,
+      orient: 'vertical',
+      right: 8, top: 'center',
+      textStyle: { color: '#555', fontSize: fs - 2 },
+      inRange,
+      formatter: zprec !== null ? v => v.toFixed(zprec) : undefined,
+      ...(isDiscrete && d.valueList.length ? {
+        type: 'piecewise',
+        categories: d.valueList.length ? undefined : undefined,
+        pieces: d.valueList.map((lbl, i) => ({ value: i, label: lbl, color: d.hexcolors[i] || '#888' })),
+        calculable: false,
+      } : {})
+    },
+    series: [{
+      type: 'heatmap',
+      data: edata,
+      emphasis: { itemStyle: { borderColor: '#333', borderWidth: 1 } },
+      label: { show: false },
+      itemStyle: { borderWidth: 0 },
+      progressive: 5000,
+    }]
+  }, true);
+}
+
+function resetXPM() { if (xpmData) { syncXPMInputs(); applyXPM(); } }
+
+// auto-apply on checkbox change
+['xvg_grid','xvg_legend'].forEach(id => {
+  document.getElementById(id).addEventListener('change', () => { if (xvgData) applyXVG(); });
+});
+['xpm_grid','xpm_aspect'].forEach(id => {
+  document.getElementById(id).addEventListener('change', () => { if (xpmData) applyXPM(); });
+});
+document.getElementById('xpm_cmap').addEventListener('change', () => { if (xpmData) applyXPM(); });
+
+// ══════════════════════════════════════════════════════
+//  Save
+// ══════════════════════════════════════════════════════
+function saveXVG() {
+  if (!xvgData) { showToast('请先加载 XVG 文件', 'error'); return; }
+  pendingSaveChart = xvgChart;
+  document.getElementById('saveOverlay').classList.add('show');
+}
+function saveXPM() {
+  if (!xpmData) { showToast('请先加载 XPM 文件', 'error'); return; }
+  pendingSaveChart = xpmChart;
+  document.getElementById('saveOverlay').classList.add('show');
+}
+function closeSaveDialog() { document.getElementById('saveOverlay').classList.remove('show'); pendingSaveChart = null; }
+
+function confirmSave() {
+  if (!pendingSaveChart) return;
+  const fmt  = v('saveFormat') || 'png';
+  const name = v('saveFilename') || 'Figure';
+  const dpi  = parseInt(document.getElementById('saveDPI').value) || 300;
+  const scale = dpi / 96;
+
+  try {
+    const url = pendingSaveChart.getDataURL({ type: fmt === 'jpeg' ? 'jpeg' : (fmt === 'svg' ? 'svg' : 'png'), pixelRatio: scale, backgroundColor: '#ffffff' });
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${name}.${fmt}`;
+    a.click();
+    closeSaveDialog();
+    showToast(`已保存: ${name}.${fmt}  (×${scale.toFixed(1)} 倍率)`, 'success');
+  } catch(e) {
+    showToast('保存失败: ' + e.message, 'error');
+  }
+}
+
+// ══════════════════════════════════════════════════════
+//  Resize
+// ══════════════════════════════════════════════════════
+window.addEventListener('resize', () => {
+  if (xvgChart) xvgChart.resize();
+  if (xpmChart) xpmChart.resize();
+});
+
+// Close dialog on overlay click
+document.getElementById('saveOverlay').addEventListener('click', e => {
+  if (e.target === document.getElementById('saveOverlay')) closeSaveDialog();
+});
 </script>
 </body>
 </html>
