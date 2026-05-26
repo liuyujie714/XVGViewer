@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <title>XVG / XPM 可视化工具 v4.0</title>
-<script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/echarts@6.0.0/dist/echarts.js"></script>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Sora:wght@300;400;600;700&display=swap');
 
@@ -36,7 +36,6 @@
     flex-direction: column;
   }
 
-  /* ── Top bar ── */
   .topbar {
     display: flex;
     align-items: center;
@@ -98,7 +97,6 @@
     white-space: nowrap;
   }
 
-  /* ── Tabs ── */
   .tabs-row {
     display: flex;
     gap: 0;
@@ -133,7 +131,6 @@
   .tab-btn.active { color: var(--accent); }
   .tab-btn.active::after { transform: scaleX(1); }
 
-  /* ── Main layout ── */
   .content {
     display: flex;
     flex: 1;
@@ -143,7 +140,6 @@
   .tab-panel { display: none; flex: 1; overflow: hidden; }
   .tab-panel.active { display: flex; }
 
-  /* chart area */
   .chart-area {
     flex: 1;
     display: flex;
@@ -183,7 +179,6 @@
     overflow: hidden;
   }
 
-  /* ── Side panel ── */
   .side-panel {
     width: var(--panel-w);
     flex-shrink: 0;
@@ -213,10 +208,7 @@
     gap: 7px;
   }
 
-  /* group boxes */
-  .grp {
-    margin-bottom: 10px;
-  }
+  .grp { margin-bottom: 10px; }
   .grp-title {
     font-size: 10px;
     font-weight: 700;
@@ -228,7 +220,6 @@
     margin-bottom: 7px;
   }
 
-  /* inputs */
   .ctrl { display: flex; flex-direction: column; gap: 2px; margin-bottom: 5px; }
   .ctrl label { font-size: 10px; color: var(--text-muted); letter-spacing: .03em; }
   .ctrl input[type=text],
@@ -251,13 +242,18 @@
   }
   .ctrl input::placeholder { color: var(--text-muted); }
 
+  /* 标签输入框为空时显示淡色提示 */
+  .ctrl input[data-label-field]:placeholder-shown {
+    color: var(--text-muted);
+    font-style: italic;
+  }
+
   .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
 
   .ctrl-row { display: flex; align-items: center; gap: 7px; margin-bottom: 5px; }
   .ctrl-row label { font-size: 11px; color: var(--text-dim); cursor: pointer; user-select: none; }
   .ctrl-row input[type=checkbox] { accent-color: var(--accent); cursor: pointer; }
 
-  /* buttons */
   .apply-btn {
     width: 100%;
     padding: 7px 0;
@@ -287,7 +283,6 @@
   }
   .reset-btn:hover { background: var(--border); color: var(--text); }
 
-  /* save dialog */
   .overlay {
     display: none;
     position: fixed; inset: 0;
@@ -334,7 +329,6 @@
   .dialog-cancel { background: var(--surface2); color: var(--text-dim); border: 1px solid var(--border) !important; }
   .dialog-cancel:hover { background: var(--border); }
 
-  /* toast */
   .toast {
     position: fixed;
     bottom: 20px; right: 20px;
@@ -359,7 +353,6 @@
 </head>
 <body>
 
-<!-- Top bar -->
 <div class="topbar">
   <span class="app-title">XVG<span>/XPM</span> Viewer</span>
   <button class="open-btn" onclick="document.getElementById('fileInput').click()">
@@ -370,13 +363,11 @@
   <span class="statusbar-msg" id="statusMsg">就绪</span>
 </div>
 
-<!-- Tabs -->
 <div class="tabs-row">
   <button class="tab-btn active" id="tabXVG" onclick="switchTab('xvg')">📈 XVG 折线图</button>
   <button class="tab-btn" id="tabXPM" onclick="switchTab('xpm')">🎨 XPM 热图</button>
 </div>
 
-<!-- Content -->
 <div class="content">
 
   <!-- ══ XVG Panel ══ -->
@@ -394,13 +385,23 @@
 
         <div class="grp">
           <div class="grp-title">图表标题</div>
-          <div class="ctrl"><label>主标题</label><input type="text" id="xvg_title" placeholder="自动读取"></div>
-          <div class="ctrl"><label>副标题</label><input type="text" id="xvg_subtitle" placeholder="自动读取"></div>
+          <!-- 说明：留空表示不显示该标签 -->
+          <div class="ctrl">
+            <label>主标题 <span style="color:var(--text-muted);font-size:9px">（留空则不显示）</span></label>
+            <input type="text" id="xvg_title" data-label-field placeholder="留空不显示">
+          </div>
+          <div class="ctrl">
+            <label>副标题 <span style="color:var(--text-muted);font-size:9px">（留空则不显示）</span></label>
+            <input type="text" id="xvg_subtitle" data-label-field placeholder="留空不显示">
+          </div>
         </div>
 
         <div class="grp">
           <div class="grp-title">X 轴</div>
-          <div class="ctrl"><label>标签名称</label><input type="text" id="xvg_xlabel" placeholder="自动读取"></div>
+          <div class="ctrl">
+            <label>标签名称 <span style="color:var(--text-muted);font-size:9px">（留空则不显示）</span></label>
+            <input type="text" id="xvg_xlabel" data-label-field placeholder="留空不显示">
+          </div>
           <div class="two-col">
             <div class="ctrl"><label>最小值</label><input type="number" id="xvg_xmin" placeholder="自动" step="any"></div>
             <div class="ctrl"><label>最大值</label><input type="number" id="xvg_xmax" placeholder="自动" step="any"></div>
@@ -427,7 +428,10 @@
 
         <div class="grp">
           <div class="grp-title">Y 轴</div>
-          <div class="ctrl"><label>标签名称</label><input type="text" id="xvg_ylabel" placeholder="自动读取"></div>
+          <div class="ctrl">
+            <label>标签名称 <span style="color:var(--text-muted);font-size:9px">（留空则不显示）</span></label>
+            <input type="text" id="xvg_ylabel" data-label-field placeholder="留空不显示">
+          </div>
           <div class="two-col">
             <div class="ctrl"><label>最小值</label><input type="number" id="xvg_ymin" placeholder="自动" step="any"></div>
             <div class="ctrl"><label>最大值</label><input type="number" id="xvg_ymax" placeholder="自动" step="any"></div>
@@ -486,12 +490,18 @@
 
         <div class="grp">
           <div class="grp-title">图表标题</div>
-          <div class="ctrl"><label>主标题</label><input type="text" id="xpm_title" placeholder="自动读取"></div>
+          <div class="ctrl">
+            <label>主标题 <span style="color:var(--text-muted);font-size:9px">（留空则不显示）</span></label>
+            <input type="text" id="xpm_title" data-label-field placeholder="留空不显示">
+          </div>
         </div>
 
         <div class="grp">
           <div class="grp-title">X 轴</div>
-          <div class="ctrl"><label>标签名称</label><input type="text" id="xpm_xlabel" placeholder="自动读取"></div>
+          <div class="ctrl">
+            <label>标签名称 <span style="color:var(--text-muted);font-size:9px">（留空则不显示）</span></label>
+            <input type="text" id="xpm_xlabel" data-label-field placeholder="留空不显示">
+          </div>
           <div class="two-col">
             <div class="ctrl"><label>最小值</label><input type="number" id="xpm_xmin" placeholder="自动" step="any"></div>
             <div class="ctrl"><label>最大值</label><input type="number" id="xpm_xmax" placeholder="自动" step="any"></div>
@@ -518,7 +528,10 @@
 
         <div class="grp">
           <div class="grp-title">Y 轴</div>
-          <div class="ctrl"><label>标签名称</label><input type="text" id="xpm_ylabel" placeholder="自动读取"></div>
+          <div class="ctrl">
+            <label>标签名称 <span style="color:var(--text-muted);font-size:9px">（留空则不显示）</span></label>
+            <input type="text" id="xpm_ylabel" data-label-field placeholder="留空不显示">
+          </div>
           <div class="two-col">
             <div class="ctrl"><label>最小值</label><input type="number" id="xpm_ymin" placeholder="自动" step="any"></div>
             <div class="ctrl"><label>最大值</label><input type="number" id="xpm_ymax" placeholder="自动" step="any"></div>
@@ -617,7 +630,6 @@
   </div>
 </div>
 
-<!-- Toast -->
 <div class="toast" id="toast"></div>
 
 <script>
@@ -674,7 +686,7 @@ function parseUnitFromLabel(label) {
 }
 
 // ══════════════════════════════════════════════════════
-//  XmgrDecode (xmgrace → unicode/LaTeX-like)
+//  XmgrDecode
 // ══════════════════════════════════════════════════════
 const GREEK = {
   x:'ξ', a:'α', q:'θ', c:'χ', d:'δ', e:'ε', y:'ψ',
@@ -683,11 +695,8 @@ const GREEK = {
 
 function xmgrDecode(s) {
   if (!s) return s;
-  // subscript: \s...\N
   s = s.replace(/\\s(.*?)\\N/g, (_,g) => `${g}`.split('').map(c=>`${c}`).join(''));
-  // superscript: \S...\N
   s = s.replace(/\\S(.*?)\\N/g, (_,g) => g);
-  // Greek: \x<letter>\f{}
   s = s.replace(/\\x([a-z])\\f\{\}/g, (_,c) => GREEK[c] || c);
   return s;
 }
@@ -709,7 +718,6 @@ function parseXVG(text) {
       else if (/@ +yaxis/.test(l)) { const m = l.match(/"([^"]*)"/); if (m) d.ylabel = m[1]; }
       else if (/@ s\d+ legend/.test(l)) { const m = l.match(/"([^"]*)"/); if (m) d.legends.push(m[1]); }
     } else {
-      const parts = l.split(/\s+/).map(Number).filter((v, i, a) => !isNaN(v) || (l.split(/\s+/)[i] !== ''));
       const nums = l.split(/\s+/).map(n => parseFloat(n)).filter(n => !isNaN(n));
       if (nums.length >= 2) raw.push(nums);
     }
@@ -718,7 +726,6 @@ function parseXVG(text) {
   if (!raw.length) throw new Error('No numeric data found in XVG file.');
 
   d.xdata = raw.map(r => r[0]);
-  // avoid spread on potentially huge array
   let ncols = 0;
   for (let i = 0; i < raw.length; i++) if (raw[i].length > ncols) ncols = raw[i].length;
   for (let i = 1; i < ncols; i++) d.ydata.push(raw.map(r => r[i] !== undefined ? r[i] : NaN));
@@ -750,7 +757,6 @@ function parseXPM(text) {
 
   const lines = text.split('\n');
 
-  // meta from comments
   for (const line of lines) {
     const l = line.trim();
     for (const [tag, attr] of [['title','title'],['legend','legend'],['x-label','xlabel'],['y-label','ylabel']]) {
@@ -830,7 +836,6 @@ function parseXPM(text) {
   d.yticks = yaxisData.length ? yaxisData.slice(0, d.ny) : Array.from({length:d.ny}, (_,i) => i);
   d.matrix = rawMatrix;
 
-  // transpose if needed — use explicit loop to avoid stack overflow on large matrices
   if (d.matrix.length === d.xticks.length && d.matrix[0] && d.matrix[0].length === d.yticks.length) {
     const rows = d.xticks.length, cols = d.yticks.length;
     const t = new Array(cols);
@@ -884,12 +889,15 @@ document.getElementById('fileInput').addEventListener('change', function() {
   this.value = '';
 });
 
+// ── 同步输入框：文件加载后把解析值写入，用户可手动清空来隐藏标签 ──
 function syncXVGInputs() {
   if (!xvgData) return;
+  // 标签字段：直接写入文件值，用户清空 = 不显示
   document.getElementById('xvg_title').value    = xvgData.title;
   document.getElementById('xvg_subtitle').value = xvgData.subtitle;
   document.getElementById('xvg_xlabel').value   = xvgData.xlabel;
   document.getElementById('xvg_ylabel').value   = xvgData.ylabel;
+  // 数值字段：清空让用户按需填写
   ['xvg_xmin','xvg_xmax','xvg_xint','xvg_xprec','xvg_scalex',
    'xvg_ymin','xvg_ymax','xvg_yint','xvg_yprec','xvg_scaley'].forEach(id => {
     document.getElementById(id).value = '';
@@ -917,9 +925,12 @@ function syncXPMInputs() {
 // ══════════════════════════════════════════════════════
 //  Helpers
 // ══════════════════════════════════════════════════════
-function v(id) { return document.getElementById(id).value.trim(); }
-function vf(id) { const t = v(id); return t !== '' ? parseFloat(t) : null; }
-function vi(id) { const t = v(id); return t !== '' ? parseInt(t) : null; }
+// v() 返回输入框的原始值（含空字符串），供标签字段直接使用
+function v(id) { return document.getElementById(id).value; }
+// vt() 返回 trim 后的值，供数值字段使用
+function vt(id) { return document.getElementById(id).value.trim(); }
+function vf(id) { const t = vt(id); return t !== '' ? parseFloat(t) : null; }
+function vi(id) { const t = vt(id); return t !== '' ? parseInt(t) : null; }
 function vc(id) { return document.getElementById(id).checked; }
 
 function setStatus(msg) { document.getElementById('statusMsg').textContent = msg; }
@@ -929,34 +940,6 @@ function showToast(msg, type='success') {
   el.textContent = msg;
   el.className = `toast show ${type}`;
   setTimeout(() => el.classList.remove('show'), 3000);
-}
-
-function applyUnitX(xdata, xlabel_orig) {
-  const dst = v('xvg_unitx') || v('xpm_unitx');
-  const src = parseUnitFromLabel(xlabel_orig);
-  let x = [...xdata], xl = xlabel_orig;
-  if (dst && src) {
-    const f = unitFactor(src, dst);
-    if (f !== null) {
-      x = x.map(v => v * f);
-      xl = xl.replace(/\([^)]+\)/, `(${dst})`);
-    }
-  }
-  return { x, xl };
-}
-
-function applyUnitY(ydata, ylabel_orig, prefix) {
-  const dst = v(`${prefix}_unity`);
-  const src = parseUnitFromLabel(ylabel_orig);
-  let yd = ydata.map(arr => [...arr]), yl = ylabel_orig;
-  if (dst && src) {
-    const f = unitFactor(src, dst);
-    if (f !== null) {
-      yd = yd.map(arr => arr.map(v => v * f));
-      yl = yl.replace(/\([^)]+\)/, `(${dst})`);
-    }
-  }
-  return { yd, yl };
 }
 
 // ══════════════════════════════════════════════════════
@@ -991,6 +974,8 @@ function getCmapColors(name, n) {
 
 // ══════════════════════════════════════════════════════
 //  Apply XVG
+//  标签字段直接读输入框原始值（空字符串 = 不显示）
+//  数值字段用 vf/vi（空 = 自动）
 // ══════════════════════════════════════════════════════
 function applyXVG() {
   if (!xvgData) return;
@@ -998,33 +983,43 @@ function applyXVG() {
 
   let xdata = [...d.xdata];
   let ydata = d.ydata.map(ys => [...ys]);
-  let xlabel = v('xvg_xlabel') || d.xlabel;
-  let ylabel = v('xvg_ylabel') || d.ylabel;
 
-  // Unit conversion
-  const dst_ux = v('xvg_unitx');
-  if (dst_ux) {
+  // 标签：直接取输入框值，空字符串代表用户清空（不显示）
+  let xlabel = v('xvg_xlabel');
+  let ylabel = v('xvg_ylabel');
+
+  // 单位换算（仅在标签非空时才做替换）
+  const dst_ux = vt('xvg_unitx');
+  if (dst_ux && xlabel) {
     const src_ux = parseUnitFromLabel(d.xlabel);
     if (src_ux) {
       const f = unitFactor(src_ux, dst_ux);
-      if (f !== null) { xdata = xdata.map(v => v * f); xlabel = xlabel.replace(/\([^)]+\)/, `(${dst_ux})`); }
+      if (f !== null) {
+        xdata = xdata.map(v => v * f);
+        xlabel = xlabel.replace(/\([^)]+\)/, `(${dst_ux})`);
+      }
     }
   }
-  const dst_uy = v('xvg_unity');
-  if (dst_uy) {
+  const dst_uy = vt('xvg_unity');
+  if (dst_uy && ylabel) {
     const src_uy = parseUnitFromLabel(d.ylabel);
     if (src_uy) {
       const f = unitFactor(src_uy, dst_uy);
-      if (f !== null) { ydata = ydata.map(ys => ys.map(v => v * f)); ylabel = ylabel.replace(/\([^)]+\)/, `(${dst_uy})`); }
+      if (f !== null) {
+        ydata = ydata.map(ys => ys.map(v => v * f));
+        ylabel = ylabel.replace(/\([^)]+\)/, `(${dst_uy})`);
+      }
     }
   }
 
-  // Scale factors
-  const sx = vf('xvg_scalex'); if (sx !== null) xdata = xdata.map(v => v * sx);
-  const sy = vf('xvg_scaley'); if (sy !== null) ydata = ydata.map(ys => ys.map(v => v * sy));
+  // 缩放
+  const sx = vf('xvg_scalex'); if (sx !== null) xdata = xdata.map(vv => vv * sx);
+  const sy = vf('xvg_scaley'); if (sy !== null) ydata = ydata.map(ys => ys.map(vv => vv * sy));
 
-  const title    = v('xvg_title')    || d.title;
-  const subtitle = v('xvg_subtitle') || d.subtitle;
+  // 标题字段：空字符串 = 不显示
+  const title    = v('xvg_title');
+  const subtitle = v('xvg_subtitle');
+
   const xmin = vf('xvg_xmin'), xmax = vf('xvg_xmax');
   const ymin = vf('xvg_ymin'), ymax = vf('xvg_ymax');
   const xint = vf('xvg_xint'), yint = vf('xvg_yint');
@@ -1033,7 +1028,6 @@ function applyXVG() {
   const showGrid = vc('xvg_grid');
   const showLegend = vc('xvg_legend');
 
-  // ECharts color palette (scientific)
   const COLORS = ['#2c7cb0','#e07b39','#2ca05a','#c0392b','#8e44ad','#16a085','#d4ac0d','#1a5276','#cb4335','#117a65'];
 
   const series = ydata.map((ys, i) => ({
@@ -1047,14 +1041,14 @@ function applyXVG() {
 
   const xAxisCfg = {
     type: 'value',
-    name: xlabel,
+    name: xlabel,          // 空字符串时 ECharts 不显示轴名
     nameLocation: 'middle',
-    nameGap: 32,
+    nameGap: xlabel ? 32 : 0,
     nameTextStyle: { fontSize: fs, color: '#333' },
     axisLabel: {
       fontSize: fs - 2,
       color: '#555',
-      formatter: xprec !== null ? v => v.toFixed(xprec) : undefined
+      formatter: xprec !== null ? vv => vv.toFixed(xprec) : vv => String(vv)
     },
     axisLine: { lineStyle: { color: '#aaa' } },
     axisTick: { lineStyle: { color: '#aaa' } },
@@ -1068,12 +1062,12 @@ function applyXVG() {
     type: 'value',
     name: ylabel,
     nameLocation: 'middle',
-    nameGap: 50,
+    nameGap: ylabel ? 50 : 0,
     nameTextStyle: { fontSize: fs, color: '#333' },
     axisLabel: {
       fontSize: fs - 2,
       color: '#555',
-      formatter: yprec !== null ? v => v.toFixed(yprec) : undefined
+      formatter: yprec !== null ? vv => vv.toFixed(yprec) : vv => String(vv)
     },
     axisLine: { lineStyle: { color: '#aaa' } },
     axisTick: { lineStyle: { color: '#aaa' } },
@@ -1089,12 +1083,20 @@ function applyXVG() {
     backgroundColor: '#ffffff',
     animation: false,
     title: [
-      { text: title, subtext: subtitle, left: 'center', top: 6, textStyle: { color: '#1a202c', fontSize: fs + 1, fontFamily: 'Sora' }, subtextStyle: { color: '#666', fontSize: fs - 1 } }
+      {
+        text: title,
+        subtext: subtitle,
+        left: 'center',
+        top: 6,
+        textStyle: { color: '#1a202c', fontSize: fs + 1, fontFamily: 'Sora' },
+        subtextStyle: { color: '#666', fontSize: fs - 1 }
+      }
     ],
     tooltip: { trigger: 'axis', backgroundColor: '#fff', borderColor: '#dde1e7', textStyle: { color: '#1a202c', fontSize: 11 } },
     legend: showLegend ? {
       data: series.map(s => s.name),
-      right: 14, top: subtitle ? 52 : 36,
+      right: 14,
+      top: subtitle ? 52 : (title ? 36 : 10),
       orient: 'vertical',
       textStyle: { color: '#333', fontSize: fs - 2 },
       icon: 'circle'
@@ -1107,7 +1109,13 @@ function applyXVG() {
       },
       iconStyle: { borderColor: '#999' }
     },
-    grid: { left: 64, right: showLegend ? 130 : 30, top: subtitle ? 70 : 54, bottom: 48 },
+    // grid top 根据是否有标题/副标题动态调整
+    grid: {
+      left: ylabel ? 64 : 40,
+      right: showLegend ? 130 : 30,
+      top: title ? (subtitle ? 70 : 54) : 30,
+      bottom: xlabel ? 48 : 30
+    },
     xAxis: xAxisCfg,
     yAxis: yAxisCfg,
     series
@@ -1124,25 +1132,25 @@ function applyXPM() {
   const d = xpmData;
 
   let X = d.xticks.slice(), Y = d.yticks.slice();
-  // safe deep copy — avoid spread on large rows
   let matrix = new Array(d.matrix.length);
   for (let i = 0; i < d.matrix.length; i++) matrix[i] = d.matrix[i].slice();
-  let xlabel = v('xpm_xlabel') || d.xlabel;
-  let ylabel = v('xpm_ylabel') || d.ylabel;
 
-  // Unit conversion
-  const dst_ux = v('xpm_unitx');
-  if (dst_ux) {
+  // 标签：直接取输入框值，空 = 不显示
+  let xlabel = v('xpm_xlabel');
+  let ylabel = v('xpm_ylabel');
+
+  // 单位换算
+  const dst_ux = vt('xpm_unitx');
+  if (dst_ux && xlabel) {
     const src_ux = parseUnitFromLabel(d.xlabel);
     if (src_ux) { const f = unitFactor(src_ux, dst_ux); if (f) { X = X.map(vv => vv * f); xlabel = xlabel.replace(/\([^)]+\)/, `(${dst_ux})`); } }
   }
-  const dst_uy = v('xpm_unity');
-  if (dst_uy) {
+  const dst_uy = vt('xpm_unity');
+  if (dst_uy && ylabel) {
     const src_uy = parseUnitFromLabel(d.ylabel);
     if (src_uy) { const f = unitFactor(src_uy, dst_uy); if (f) { Y = Y.map(vv => vv * f); ylabel = ylabel.replace(/\([^)]+\)/, `(${dst_uy})`); } }
   }
 
-  // Scale factors — explicit loops to avoid stack issues on large matrices
   const sx = vf('xpm_scalex'); if (sx !== null) for (let i = 0; i < X.length; i++) X[i] *= sx;
   const sy = vf('xpm_scaley'); if (sy !== null) for (let i = 0; i < Y.length; i++) Y[i] *= sy;
   const sz = vf('xpm_scalez');
@@ -1151,7 +1159,6 @@ function applyXPM() {
       for (let c = 0; c < matrix[r].length; c++) matrix[r][c] *= sz;
   }
 
-  // Axis clip — build index arrays without object allocation
   const xi_keep = [], xi_x = [], yi_keep = [], yi_y = [];
   const xmin = vf('xpm_xmin'), xmax = vf('xpm_xmax');
   const ymin = vf('xpm_ymin'), ymax = vf('xpm_ymax');
@@ -1170,15 +1177,15 @@ function applyXPM() {
   }
   matrix = clipped;
 
-  const title  = v('xpm_title')  || d.title;
+  const title  = v('xpm_title');   // 空 = 不显示
   const xint   = vf('xpm_xint'), yint   = vf('xpm_yint');
   const xprec  = vi('xpm_xprec'), yprec  = vi('xpm_yprec'), zprec = vi('xpm_zprec');
   const vmin_v = vf('xpm_vmin'), vmax_v = vf('xpm_vmax');
   const fs     = vf('xpm_fontsize') || 13;
   const isDiscrete = d.xpmType.toLowerCase() === 'discrete';
-  const cmapName = v('xpm_cmap');
+  const cmapName = vt('xpm_cmap');
+  const useAspect = vc('xpm_aspect');
 
-  // Build echarts heatmap data: [xi, yi, value]
   const edata = [];
   for (let yi = 0; yi < Y.length; yi++) {
     for (let xi = 0; xi < X.length; xi++) {
@@ -1187,7 +1194,6 @@ function applyXPM() {
     }
   }
 
-  // Color range — avoid Math.min/max spread on large arrays
   let zMin, zMax;
   if (vmin_v !== null && vmax_v !== null) {
     zMin = vmin_v; zMax = vmax_v;
@@ -1202,15 +1208,10 @@ function applyXPM() {
     if (vmax_v !== null) zMax = vmax_v;
   }
 
-  // Colormap
   let inRange;
   if (cmapName === 'auto' || isDiscrete) {
     if (d.hexcolors.length) {
-      if (isDiscrete) {
-        inRange = { color: d.hexcolors.slice(0, d.nc) };
-      } else {
-        inRange = { color: d.hexcolors };
-      }
+      inRange = { color: isDiscrete ? d.hexcolors.slice(0, d.nc) : d.hexcolors };
     } else {
       inRange = { color: getCmapColors('viridis', 10).map(s => s[1]) };
     }
@@ -1223,14 +1224,18 @@ function applyXPM() {
 
   if (!xpmChart) xpmChart = echarts.init(document.getElementById('xpmChart'));
 
-  // Determine tick interval for display
   const xTickEvery = xint ? Math.max(1, Math.round(xint / (X.length > 1 ? Math.abs(X[1]-X[0]) : 1))) : Math.max(1, Math.floor(X.length / 10));
   const yTickEvery = yint ? Math.max(1, Math.round(yint / (Y.length > 1 ? Math.abs(Y[1]-Y[0]) : 1))) : Math.max(1, Math.floor(Y.length / 10));
 
   xpmChart.setOption({
     backgroundColor: '#ffffff',
     animation: false,
-    title: { text: title, left: 'center', top: 4, textStyle: { color: '#1a202c', fontSize: fs + 1, fontFamily: 'Sora' } },
+    title: {
+      text: title,    // 空字符串 = 不显示标题
+      left: 'center',
+      top: 4,
+      textStyle: { color: '#1a202c', fontSize: fs + 1, fontFamily: 'Sora' }
+    },
     tooltip: {
       trigger: 'item',
       backgroundColor: '#fff',
@@ -1244,11 +1249,41 @@ function applyXPM() {
         return `X: ${xv}<br/>Y: ${yv}<br/>Z: ${zv}`;
       }
     },
-    grid: { left: 70, right: isDiscrete ? 140 : 80, top: 50, bottom: 58 },
+    grid: (() => {
+      const gLeft   = ylabel ? 70 : 46;
+      const gRight  = isDiscrete ? 140 : 80;
+      const gTop    = title ? 50 : 20;
+      const gBottom = xlabel ? 58 : 36;
+      if (!useAspect || !X.length || !Y.length) {
+        return { left: gLeft, right: gRight, top: gTop, bottom: gBottom };
+      }
+      // 等比轴：每格像素宽 == 每格像素高，即 plotW/nx == plotH/ny
+      const containerW = document.getElementById('xpmChart').offsetWidth  || 800;
+      const containerH = document.getElementById('xpmChart').offsetHeight || 600;
+      const availW = containerW - gLeft - gRight;
+      const availH = containerH - gTop  - gBottom;
+      const ratio  = X.length / Y.length;   // 目标 plotW/plotH
+      let plotW = availW, plotH = availH;
+      if (availW / availH > ratio) {
+        plotW = Math.round(availH * ratio);  // 高优先，收窄宽
+      } else {
+        plotH = Math.round(availW / ratio);  // 宽优先，收矮高
+      }
+      const extraW = availW - plotW;
+      const extraH = availH - plotH;
+      return {
+        left:   gLeft   + Math.floor(extraW / 2),
+        right:  gRight  + Math.ceil(extraW  / 2),
+        top:    gTop    + Math.floor(extraH / 2),
+        bottom: gBottom + Math.ceil(extraH  / 2)
+      };
+    })(),
     xAxis: {
       type: 'category',
       data: xLabels,
-      name: xlabel, nameLocation: 'middle', nameGap: 30,
+      name: xlabel,
+      nameLocation: 'middle',
+      nameGap: xlabel ? 30 : 0,
       nameTextStyle: { fontSize: fs, color: '#333' },
       axisLabel: {
         fontSize: fs - 2, color: '#555', rotate: 0,
@@ -1261,7 +1296,9 @@ function applyXPM() {
     yAxis: {
       type: 'category',
       data: yLabels,
-      name: ylabel, nameLocation: 'middle', nameGap: 52,
+      name: ylabel,
+      nameLocation: 'middle',
+      nameGap: ylabel ? 52 : 0,
       nameTextStyle: { fontSize: fs, color: '#333' },
       axisLabel: { fontSize: fs - 2, color: '#555', interval: yTickEvery - 1 },
       axisLine: { lineStyle: { color: '#aaa' } },
@@ -1275,10 +1312,9 @@ function applyXPM() {
       right: 8, top: 'center',
       textStyle: { color: '#555', fontSize: fs - 2 },
       inRange,
-      formatter: zprec !== null ? v => v.toFixed(zprec) : undefined,
+      formatter: zprec !== null ? vv => vv.toFixed(zprec) : undefined,
       ...(isDiscrete && d.valueList.length ? {
         type: 'piecewise',
-        categories: d.valueList.length ? undefined : undefined,
         pieces: d.valueList.map((lbl, i) => ({ value: i, label: lbl, color: d.hexcolors[i] || '#888' })),
         calculable: false,
       } : {})
@@ -1296,7 +1332,7 @@ function applyXPM() {
 
 function resetXPM() { if (xpmData) { syncXPMInputs(); applyXPM(); } }
 
-// auto-apply on checkbox change
+// auto-apply on checkbox/select change
 ['xvg_grid','xvg_legend'].forEach(id => {
   document.getElementById(id).addEventListener('change', () => { if (xvgData) applyXVG(); });
 });
@@ -1322,8 +1358,8 @@ function closeSaveDialog() { document.getElementById('saveOverlay').classList.re
 
 function confirmSave() {
   if (!pendingSaveChart) return;
-  const fmt  = v('saveFormat') || 'png';
-  const name = v('saveFilename') || 'Figure';
+  const fmt  = vt('saveFormat') || 'png';
+  const name = vt('saveFilename') || 'Figure';
   const dpi  = parseInt(document.getElementById('saveDPI').value) || 300;
   const scale = dpi / 96;
 
@@ -1345,10 +1381,13 @@ function confirmSave() {
 // ══════════════════════════════════════════════════════
 window.addEventListener('resize', () => {
   if (xvgChart) xvgChart.resize();
-  if (xpmChart) xpmChart.resize();
+  if (xpmChart) {
+    // 等比轴时需重新计算 grid，普通情况直接 resize 即可
+    if (xpmData && vc('xpm_aspect')) applyXPM();
+    else xpmChart.resize();
+  }
 });
 
-// Close dialog on overlay click
 document.getElementById('saveOverlay').addEventListener('click', e => {
   if (e.target === document.getElementById('saveOverlay')) closeSaveDialog();
 });
