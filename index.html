@@ -638,7 +638,7 @@
 // ══════════════════════════════════════════════════════
 let xvgData = null, xpmData = null;
 let xvgChart = null, xpmChart = null;
-let pendingSaveChart = null;
+let pendingSaveTarget = null;  // 'xvg' | 'xpm'
 let currentTab = 'xvg';
 
 // ── ECharts init ──
@@ -1346,31 +1346,61 @@ document.getElementById('xpm_cmap').addEventListener('change', () => { if (xpmDa
 // ══════════════════════════════════════════════════════
 function saveXVG() {
   if (!xvgData) { showToast('请先加载 XVG 文件', 'error'); return; }
-  pendingSaveChart = xvgChart;
+  pendingSaveTarget = 'xvg';
   document.getElementById('saveOverlay').classList.add('show');
 }
 function saveXPM() {
   if (!xpmData) { showToast('请先加载 XPM 文件', 'error'); return; }
-  pendingSaveChart = xpmChart;
+  pendingSaveTarget = 'xpm';
   document.getElementById('saveOverlay').classList.add('show');
 }
-function closeSaveDialog() { document.getElementById('saveOverlay').classList.remove('show'); pendingSaveChart = null; }
+function closeSaveDialog() { document.getElementById('saveOverlay').classList.remove('show'); pendingSaveTarget = null; }
 
 function confirmSave() {
-  if (!pendingSaveChart) return;
+  if (!pendingSaveTarget) return;
   const fmt  = vt('saveFormat') || 'png';
   const name = vt('saveFilename') || 'Figure';
   const dpi  = parseInt(document.getElementById('saveDPI').value) || 300;
   const scale = dpi / 96;
 
   try {
-    const url = pendingSaveChart.getDataURL({ type: fmt === 'jpeg' ? 'jpeg' : (fmt === 'svg' ? 'svg' : 'png'), pixelRatio: scale, backgroundColor: '#ffffff' });
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${name}.${fmt}`;
-    a.click();
+    const srcChart = pendingSaveTarget === 'xvg' ? xvgChart : xpmChart;
+    const opt = srcChart.getOption();
+    opt.toolbox = [{ show: false }];  // 导出时隐藏工具栏
+
+    if (fmt === 'svg') {
+      // SVG 导出：用离屏 SVG renderer 重渲一次，直接取 SVG 文本
+      const offDiv = document.createElement('div');
+      offDiv.style.cssText = 'position:fixed;left:-9999px;top:-9999px;width:800px;height:600px;';
+      document.body.appendChild(offDiv);
+
+      const offChart = echarts.init(offDiv, null, { renderer: 'svg', width: 800, height: 600 });
+      offChart.setOption(opt);
+
+      // 取 SVG 元素的 outerHTML
+      const svgEl = offDiv.querySelector('svg');
+      if (!svgEl) throw new Error('SVG 元素未找到');
+      svgEl.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+
+      const blob = new Blob([svgEl.outerHTML], { type: 'image/svg+xml;charset=utf-8' });
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement('a');
+      a.href = url; a.download = `${name}.svg`; a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+
+      offChart.dispose();
+      document.body.removeChild(offDiv);
+    } else {
+      // PNG / JPEG：临时隐藏 toolbox 再导出，导出后恢复
+      srcChart.setOption({ toolbox: [{ show: false }] });
+      const url = srcChart.getDataURL({ type: fmt === 'jpeg' ? 'jpeg' : 'png', pixelRatio: scale, backgroundColor: '#ffffff' });
+      srcChart.setOption({ toolbox: [{ show: true }] });
+      const a = document.createElement('a');
+      a.href = url; a.download = `${name}.${fmt}`; a.click();
+    }
+
     closeSaveDialog();
-    showToast(`已保存: ${name}.${fmt}  (×${scale.toFixed(1)} 倍率)`, 'success');
+    showToast(`已保存: ${name}.${fmt}${fmt !== 'svg' ? `  (×${scale.toFixed(1)} 倍率)` : ''}`, 'success');
   } catch(e) {
     showToast('保存失败: ' + e.message, 'error');
   }
